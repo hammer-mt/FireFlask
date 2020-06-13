@@ -1,9 +1,15 @@
 # To Do list
 
+## Improvements
+- Could the firebase config go into my config.py file?
+
 ## Roadmap
 - Authentication 
     - [Flask and Firebase and Pyrebase Oh My](https://blog.upperlinecode.com/flask-and-firebase-and-pyrebase-oh-my-f30548d68ea9)
     - [Heating up with firebase tutorial on how to integrate firebase into your app](https://blog.devcolor.org/heating-up-with-firebase-tutorial-on-how-to-integrate-firebase-into-your-app-6ce97440175d)
+    - [Using Flask-Login for User Management with Flask](https://realpython.com/using-flask-login-for-user-management-with-flask/)
+    - [Firebase Authentication with Python including Flask API](https://www.youtube.com/watch?v=FCw5PFDb99k)
+    - [Manage Session Cookies](https://firebase.google.com/docs/auth/admin/manage-cookies#python)
 - Cloud Functions
 - Pagination
 - Bootstrap
@@ -23,6 +29,7 @@
 ## Nice to have
 - Email
 - Elastic Search
+- Data Layer
 - Blueprints 
     - [Flask Tutorial](https://flask.palletsprojects.com/en/1.1.x/tutorial/)
 - React 

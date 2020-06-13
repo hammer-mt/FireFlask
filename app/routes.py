@@ -1,6 +1,22 @@
 from flask import render_template, flash, redirect, url_for
 from app.forms import LoginForm
 from app import app
+import pyrebase
+import os
+
+config = {
+    "apiKey": os.environ['FIREBASE_API_KEY'],
+    "authDomain": "fireflask-ef97c.firebaseapp.com",
+    "databaseURL": "https://fireflask-ef97c.firebaseio.com",
+    "projectId": "fireflask-ef97c",
+    "storageBucket": "fireflask-ef97c.appspot.com",
+    "messagingSenderId": "381149552037",
+    "appId": "1:381149552037:web:47b684b770d91d396e9c4c",
+    "measurementId": "G-H6VEF5PZJP"
+}
+
+firebase = pyrebase.initialize_app(config)
+db = firebase.database()
 
 @app.route('/')
 @app.route('/index')
