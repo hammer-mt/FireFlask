@@ -61,7 +61,7 @@ class User(UserMixin):
     @staticmethod
     def reset(email):
         auth.send_password_reset_email(email)
-
+    
     def logout(self):
         auth.current_user = None
 

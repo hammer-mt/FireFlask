@@ -1,25 +1,22 @@
 from flask import render_template, flash, redirect, url_for, session
-from flask_login import current_user, login_required, login_user, logout_user
+from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from app.forms import SignInForm, SignUpForm, ResetPasswordForm
-from app import app, db, auth, login_manager
+from app import app, db
 from app.user import User
 import requests
 import json
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
+
 @app.route('/')
 @app.route('/index')
 def index():
-    posts = [
-        {
-            'author': {'username': 'John'},
-            'body': 'Beautiful day in Portland!'
-        },
-        {
-            'author': {'username': 'Susan'},
-            'body': 'The Avengers movie was so cool!'
-        }
-    ]
-    return render_template('index.html', title='Home', posts=posts)
+    return render_template('index.html', title='Home')
 
 @app.route('/sign_in', methods=['GET', 'POST'])
 def sign_in():
@@ -65,11 +62,12 @@ def sign_up():
             )
             return redirect(url_for('index'))
         except requests.exceptions.HTTPError as e:
+            print(e)
             error_json = e.args[1]
             error = json.loads(error_json)['error']['message']
 
             flash('Error: {}'.format(error))
-            return render_template('access.html', title='Access', form=form)
+            return render_template('sign_up.html', title='Sign Up', form=form)
         
     return render_template('sign_up.html', title='Sign Up', form=form)
 
@@ -86,8 +84,11 @@ def reset_password():
 @app.route('/sign_out', methods=['GET', 'POST'])
 @login_required
 def sign_out():
+    user = current_user
+    user.is_authenticated = False
+    user.logout()
     logout_user()
-    flash("You have been logged out")
+    
     return redirect(url_for("index"))
 
 @app.errorhandler(404)
@@ -97,5 +98,4 @@ def page_not_found(e):
 
 @login_manager.unauthorized_handler
 def unauthorized():
-    flash("Unauthorized access")
-    return redirect(url_for("index")), 401
+    return redirect(url_for("sign_in")), 401

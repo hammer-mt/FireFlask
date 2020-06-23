@@ -10,8 +10,12 @@
         <div>
             FireFlask:
             <a href="{{ url_for('index') }}">Home</a>
-            <a href="{{ url_for('signin') }}">Sign In</a>
-            <a href="{{ url_for('signup') }}">Sign Up</a>
+            {% if current_user.is_authenticated() %}
+            <a href="{{ url_for('sign_out') }}">Sign Out</a>
+            {% else %}
+            <a href="{{ url_for('sign_up') }}">Sign Up</a>
+            <a href="{{ url_for('sign_in') }}">Sign In</a>
+            {% endif %}
         </div>
         <hr>
         {% with messages = get_flashed_messages() %}
