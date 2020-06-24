@@ -55,7 +55,7 @@ def sign_up():
         #authenticate a user
         try:
             # Sign up successful
-            user =  User.create(name, email, password)
+            user = User.create(name, email, password)
             login_user(user, remember=True)
             flash('User {}, logged in with id={}'.format(
                 current_user.email, current_user.get_id())
@@ -68,6 +68,9 @@ def sign_up():
 
             flash('Error: {}'.format(error))
             return render_template('sign_up.html', title='Sign Up', form=form)
+    else:
+        print("form did not validate")
+        print(form.errors)
         
     return render_template('sign_up.html', title='Sign Up', form=form)
 
