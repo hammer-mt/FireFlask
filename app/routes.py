@@ -1,6 +1,6 @@
 from flask import render_template, flash, redirect, url_for, session
-from flask_login import LoginManager, current_user, login_required, login_user, logout_user
-from app.forms import SignInForm, SignUpForm, ResetPasswordForm
+from flask_login import LoginManager, current_user, login_required
+from app.forms import SignInForm, SignUpForm
 from app import app, db
 from app.user import User
 import requests
@@ -13,8 +13,8 @@ login_manager.init_app(app)
 def load_user(user_id):
     return User.get(user_id)
 
-@app.route('/')
 @app.route('/index')
+@app.route('/')
 def index():
     return render_template('index.html', title='Home')
 
@@ -25,21 +25,17 @@ def sign_in():
         email = form.email.data
         password = form.password.data
 
-        # Authenticate a user
+        #authenticate a user
         try:
             # Sign in successful
-            user =  User.auth(email, password)
-            login_user(user, remember=True)
-
+            User.auth(email, password)
             flash('User {}, logged in with id={}'.format(
-                current_user.email, current_user.get_id())
+                current_user.email, current_user.id)
             )
             return redirect(url_for('index'))
-        except requests.exceptions.HTTPError as e:
-            error_json = e.args[1]
-            error = json.loads(error_json)['error']['message']
 
-            flash('Error: {}'.format(error))
+        except Exception as e:
+            flash('Error: {}'.format(e), 'danger')
             return render_template('sign_in.html', title='Sign In', form=form)
         
     return render_template('sign_in.html', title='Sign In', form=form)
@@ -55,43 +51,22 @@ def sign_up():
         #authenticate a user
         try:
             # Sign up successful
-            user = User.create(name, email, password)
-            login_user(user, remember=True)
-            flash('User {}, logged in with id={}'.format(
-                current_user.email, current_user.get_id())
+            User.create(name, email, password)
+            flash('User {}, created with id={}'.format(
+                current_user.email, current_user.id)
             )
             return redirect(url_for('index'))
-        except requests.exceptions.HTTPError as e:
-            print(e)
-            error_json = e.args[1]
-            error = json.loads(error_json)['error']['message']
 
-            flash('Error: {}'.format(error))
+        except Exception as e:
+            flash('Error: {}'.format(e), 'danger')
             return render_template('sign_up.html', title='Sign Up', form=form)
-    else:
-        print("form did not validate")
-        print(form.errors)
         
     return render_template('sign_up.html', title='Sign Up', form=form)
-
-@app.route('/reset_password', methods=['GET', 'POST'])
-def reset_password():
-    form = ResetPasswordForm()
-    if form.validate_on_submit():
-        email = form.email.data
-        User.reset(email)
-        flash("Password reset email sent")
-        
-    return redirect(url_for("sign_in"))
     
 @app.route('/sign_out', methods=['GET', 'POST'])
 @login_required
 def sign_out():
-    user = current_user
-    user.is_authenticated = False
-    user.logout()
-    logout_user()
-    
+    User.logout()
     return redirect(url_for("index"))
 
 @app.errorhandler(404)

@@ -1,72 +1,64 @@
 from flask_login import UserMixin
-from app import db, auth
+from app import pyr_auth
+from firebase_admin import auth
+from flask_login import login_user, logout_user
 
 class User(UserMixin):
-    def __init__(self, firebase_id, access_token, login_token, refresh_token, email, name):
-        self.firebase_id = firebase_id
-        self.access_token = access_token
-        self.login_token = login_token
-        self.refresh_token = refresh_token
+    def __init__(self, uid, email, name):
+        self.id = uid
         self.email = email
         self.name = name
-
-    def get_id(self):
-        return self.firebase_id
     
     @staticmethod
     def get(user_id):
-        meta = db.child('users').get(user_id).val()
-        cred = auth.get_account_info(meta['access_token'])
-        user = User(
-            firebase_id=cred['localId'],
-            access_token=cred['idToken'],
-            refresh_token=cred['refreshToken'],
-            email=cred['email'],
-            name=meta['name'],
-            login_token=meta['login_token']
-        )
-        return user
+        try:
+            firebase_user = auth.get_user(user_id)
+            print('Successfully fetched user data: {0}'.format(firebase_user.uid))
+
+            flask_user = User(
+                uid=firebase_user.uid,
+                email=firebase_user.email,
+                name=firebase_user.display_name
+            )
+            return flask_user
+        except Exception as e:
+            print(e)
+            return None
 
     @staticmethod
     def create(name, email, password):
-        cred = auth.create_user_with_email_and_password(email, password)
-        login_token = auth.create_custom_token(cred['localId'])
-        db.child('users').child(cred['localId']).set({
-            "name": name,
-            "login_token": login_token,
-            "access_token": cred['idToken']
-        })
-        user = User(
-            firebase_id=cred['localId'],
-            access_token=cred['idToken'],
-            refresh_token=cred['refreshToken'],
+        firebase_user = auth.create_user(
             email=email,
-            name=name,
-            login_token=login_token
+            password=password,
+            display_name=name
         )
-        return user
+        print('Sucessfully created new user: {0}'.format(firebase_user.uid))
+
+        flask_user = User(
+            uid=firebase_user.uid,
+            email=firebase_user.email,
+            name=firebase_user.display_name
+        )
+        login_user(flask_user, remember=True)
+        return flask_user
 
     @staticmethod
     def auth(email, password):
-        cred = auth.sign_in_with_email_and_password(email, password)
-        meta = db.child('users').get(cred['localId']).val()
-        user = User(
-            firebase_id=cred['localId'],
-            access_token=cred['idToken'],
-            refresh_token=cred['refreshToken'],
-            email=cred['email'],
-            name=meta['name'],
-            login_token=meta['login_token']
+        pyr_user = pyr_auth.sign_in_with_email_and_password(email, password)
+        print(pyr_user)
+        flask_user = User(
+            uid=pyr_user['localId'],
+            email=pyr_user['email'],
+            name=pyr_user['displayName']
         )
-        return user
+        login_user(flask_user, remember=True)
+        return flask_user
 
     @staticmethod
-    def reset(email):
-        auth.send_password_reset_email(email)
+    def logout():
+        logout_user()
 
-    def logout(self):
-        auth.current_user = None
 
-    def update(self, meta):
-        uid = auth.current_user.uid
-        db.child("users").child(uid).update(meta)
+
+
+
