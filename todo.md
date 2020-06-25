@@ -1,19 +1,12 @@
 # To Do list
 
-## Improvements
-- Could the firebase config go into my config.py file?
-
 ## Roadmap
-- Authentication 
-    - [Flask and Firebase and Pyrebase Oh My](https://blog.upperlinecode.com/flask-and-firebase-and-pyrebase-oh-my-f30548d68ea9)
-    - [Heating up with firebase tutorial on how to integrate firebase into your app](https://blog.devcolor.org/heating-up-with-firebase-tutorial-on-how-to-integrate-firebase-into-your-app-6ce97440175d)
-    - [Using Flask-Login for User Management with Flask](https://realpython.com/using-flask-login-for-user-management-with-flask/)
-    - [Firebase Authentication with Python including Flask API](https://www.youtube.com/watch?v=FCw5PFDb99k)
-    - [Manage Session Cookies](https://firebase.google.com/docs/auth/admin/manage-cookies#python)
+- Bootstrap / Materialize
+    - [https://github.com/iamshaunjp/firebase-auth](firebase-auth by the Net Ninja)
 - Cloud Functions
-- Pagination
-- Bootstrap
-- 3rd-party APIs
+    - [Serverless Python Quickstart with Google Cloud Functions](https://dev.to/googlecloud/serverless-python-quickstart-with-google-cloud-functions-19bb)
+- Blueprints 
+    - [Flask Tutorial](https://flask.palletsprojects.com/en/1.1.x/tutorial/)
 - Testing 
     - [Testing Flask Applications](https://flask.palletsprojects.com/en/1.1.x/testing/)
     - [Running End to End tests as Google Cloud Functions](https://hackernoon.com/running-end-to-end-tests-as-google-cloud-functions-f5e34ffc3984)
@@ -27,22 +20,21 @@
     - [Deploy Python on Firebase Hosting with Cloud Run - Firecasts](https://www.youtube.com/watch?v=t5EfITuFD9w)
 
 ## Nice to have
-- Email
-- Elastic Search
-- Data Layer
-- Blueprints 
-    - [Flask Tutorial](https://flask.palletsprojects.com/en/1.1.x/tutorial/)
+- More advanced auth (rest password, update profile, etc)
+- Teams / multi-tenancy
+- Pagination from database
+- Chron jobs
+- Automated data enrichment / processing
+- Sending email via sendgrid or similar
+- Connect to 3rd-party APIs
 - React 
     - [The Ultimate Flask Front-End](https://realpython.com/the-ultimate-flask-front-end/)
 - AJAX
     - [The Flask Mega-Tutorial Part XX: Some JavaScript Magic](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-xx-some-javascript-magic)
-- Static pages 
-    - [How to build a simple personal website with python, flask and netlify](https://medium.com/@francescaguiducci/how-to-build-a-simple-personal-website-with-python-flask-and-netlify-d800c97c283d)
 - Stripe
     - [Adding a Custom Stripe Checkout to a Flask App](https://testdriven.io/blog/adding-a-custom-stripe-checkout-to-a-flask-app/)
-- Teams
-- API
-
-
+- Static pages 
+    - [How to build a simple personal website with python, flask and netlify](https://medium.com/@francescaguiducci/how-to-build-a-simple-personal-website-with-python-flask-and-netlify-d800c97c283d)
+    - [Static websites with flask](http://www.dougalmatthews.com/2017/Jan/13/static-websites-with-flask/)
 
 
