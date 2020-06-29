@@ -1,41 +1,89 @@
-<html>
+<html lang="en">
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <!-- Compiled and minified CSS -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+        
+        <!-- Material Design Icons -->
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+        <!-- Compiled and minified JavaScript -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+        <style>
+            body {
+                display: flex;
+                min-height: 100vh;
+                flex-direction: column;
+            }
+            main {
+                flex: 1 0 auto;
+            }
+        </style>
+        
         {% if title %}
         <title>{{ title }} - FireFlask</title>
         {% else %}
         <title>FireFlask</title>
         {% endif %}
-    </head>
-    <body>
-        <div>
-            FireFlask:
-            <a href="{{ url_for('index') }}">Home</a>
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('sign_out') }}">Sign Out</a>
-            {% else %}
-            <a href="{{ url_for('sign_up') }}">Sign Up</a>
-            <a href="{{ url_for('sign_in') }}">Sign In</a>
-            {% endif %}
-        </div>
-        <hr>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible" role="alert">
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            {{ message }}
-        </div>
-        {% endfor %}
+
+        {% if desc %}
+        <title>{{ desc }}</title>
+        {% else %}
+        <meta name="description" content="Fireflask is a boilerplate template for spinning up a Python Flask application with a Firebase NoSQL database / cloud function backend, and Materalize CSS."/>
         {% endif %}
-        {% endwith %}
-        {% block content %}{% endblock %}
-        <hr>
-        <footer>
-            {% if current_user.is_authenticated %}
-            <p>Current user: {{ current_user.id }}</p>
-            {% else %}
-            <p>Current user: Anonymous</p>
-            {% endif %}
+    </head>
+    <body class="grey lighten-3">
+        <!-- NAVBAR -->
+        <nav class="z-depth-0 grey lighten-4">
+            <div class="nav-wrapper container">
+                <a href="{{ url_for('index') }}" class="brand-logo">
+                    <span class="grey-text">🔥⚗️ FireFlask</span>
+                </a>
+                <ul id="nav-mobile" class="right hide-on-med-and-down">
+                    {% if current_user.is_authenticated %}
+                    <li>
+                        <a href="{{ url_for('sign_out') }}" class="waves-effect waves-light grey lighten-2 grey-text btn-flat">Sign Out</a>
+                    </li>
+                    {% else %}
+                    <li>
+                        <a href="{{ url_for('sign_in') }}" class="grey-text">Sign In</a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('sign_up') }}" class="waves-effect waves-light btn">Sign Up</a>
+                    </li>
+                    {% endif %}
+                </span>
+                </ul>
+            </div>
+        </nav>
+        <main>
+            <div class="container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <script>
+                    (function () {
+                        M.toast({html: "{{ message }}", classes: "{{ category }}"})
+                    })();
+                </script>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+                {% block content %}{% endblock %}
+                
+            </div>
+        </main>
+        <footer class="page-footer grey lighten-4">
+            <div class="container">
+                {% if current_user.is_authenticated %}
+                <p class="grey-text">Current user: {{ current_user.id }}</p>
+                {% else %}
+                <p class="grey-text">Current user: Anonymous</p>
+                {% endif %}
+            </div>
         </footer>
     </body>
 </html>

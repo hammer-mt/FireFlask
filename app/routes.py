@@ -1,4 +1,4 @@
-from flask import render_template, flash, redirect, url_for, session
+from flask import render_template, flash, redirect, url_for, session, escape
 from flask_login import LoginManager, current_user, login_required
 from app.forms import SignInForm, SignUpForm
 from app import app, db
@@ -30,12 +30,17 @@ def sign_in():
             # Sign in successful
             User.auth(email, password)
             flash('User {}, logged in with id={}'.format(
-                current_user.email, current_user.id)
+                current_user.email, current_user.id),
+                'blue'
             )
             return redirect(url_for('index'))
 
         except Exception as e:
-            flash('Error: {}'.format(e), 'danger')
+            print(e)
+            error_json = e.args[1]
+            error = json.loads(error_json)['error']['message']
+            flash("Error: {}".format(error), 'red')
+            
             return render_template('sign_in.html', title='Sign In', form=form)
         
     return render_template('sign_in.html', title='Sign In', form=form)
@@ -53,20 +58,25 @@ def sign_up():
             # Sign up successful
             User.create(name, email, password)
             flash('User {}, created with id={}'.format(
-                current_user.email, current_user.id)
+                current_user.email, current_user.id),
+                'teal'
             )
             return redirect(url_for('index'))
 
         except Exception as e:
-            flash('Error: {}'.format(e), 'danger')
-            return render_template('sign_up.html', title='Sign Up', form=form)
+            print(e)
+            error_json = e.args[1]
+            error = json.loads(error_json)['error']['message']
+            flash("Error: {}".format(error), 'red')
         
     return render_template('sign_up.html', title='Sign Up', form=form)
     
 @app.route('/sign_out', methods=['GET', 'POST'])
 @login_required
 def sign_out():
+    user_id = current_user.id
     User.logout()
+    flash("User {} signed out".format(user_id), 'blue')
     return redirect(url_for("index"))
 
 @app.errorhandler(404)
@@ -76,4 +86,5 @@ def page_not_found(e):
 
 @login_manager.unauthorized_handler
 def unauthorized():
+    flash("Please sign in to access", 'red')
     return redirect(url_for("sign_in")), 401
