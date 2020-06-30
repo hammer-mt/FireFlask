@@ -9,19 +9,20 @@
         <!-- Material Design Icons -->
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-        <!-- Compiled and minified JavaScript -->
+        <!-- Custom styling -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+        <!-- Compiled and minified JQuery -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+        <!-- Compiled and minified Materialize -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
-        <style>
-            body {
-                display: flex;
-                min-height: 100vh;
-                flex-direction: column;
-            }
-            main {
-                flex: 1 0 auto;
-            }
-        </style>
+        <!-- Custom script -->
+        <script type="text/javascript" src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+        <!-- Favicon-->
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚗️</text></svg>">
         
         {% if title %}
         <title>{{ title }} - FireFlask</title>
@@ -40,18 +41,29 @@
         <nav class="z-depth-0 grey lighten-4">
             <div class="nav-wrapper container">
                 <a href="{{ url_for('index') }}" class="brand-logo">
-                    <span class="grey-text">🔥⚗️ FireFlask</span>
+                    <span class="grey-text">⚗️ FireFlask</span>
                 </a>
                 <ul id="nav-mobile" class="right hide-on-med-and-down">
                     {% if current_user.is_authenticated %}
+                    <!-- Dropdown Structure -->
+                    <ul id="dropdown1" class="dropdown-content">
+                        <li class="index"><a href="{{ url_for('index') }}">Home</a></li>
+                        <li><a href="#!">Account</a></li>
+                        <li class="divider"></li>
+                        <li>
+                            <a href="{{ url_for('sign_out') }}" class="grey-text">Sign Out</a>
+                        </li>
+                    </ul>
+                    <!-- Dropdown Trigger -->
                     <li>
-                        <a href="{{ url_for('sign_out') }}" class="waves-effect waves-light grey lighten-2 grey-text btn-flat">Sign Out</a>
+                        <a class="dropdown-trigger grey-text" href="#!" data-target="dropdown1">Settings<i class="material-icons right">arrow_drop_down</i></a>
                     </li>
+
                     {% else %}
-                    <li>
+                    <li id="sign_in">
                         <a href="{{ url_for('sign_in') }}" class="grey-text">Sign In</a>
                     </li>
-                    <li>
+                    <li id="sign_up">
                         <a href="{{ url_for('sign_up') }}" class="waves-effect waves-light btn">Sign Up</a>
                     </li>
                     {% endif %}
@@ -60,22 +72,22 @@
             </div>
         </nav>
         <main>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <script>
+                (function () {
+                    M.toast({html: "{{ message }}", classes: "{{ category }}"})
+                })();
+            </script>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
             <div class="container">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                {% for category, message in messages %}
-                <script>
-                    (function () {
-                        M.toast({html: "{{ message }}", classes: "{{ category }}"})
-                    })();
-                </script>
-                {% endfor %}
-                {% endif %}
-                {% endwith %}
                 {% block content %}{% endblock %}
-                
             </div>
         </main>
+        
         <footer class="page-footer grey lighten-4">
             <div class="container">
                 {% if current_user.is_authenticated %}
@@ -85,5 +97,10 @@
                 {% endif %}
             </div>
         </footer>
+        <script>
+            $(document).ready(function () {
+            $("#{{request.endpoint}}").addClass("active"); })
+            $(".dropdown-trigger").dropdown();
+        </script>  
     </body>
 </html>
