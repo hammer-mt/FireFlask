@@ -1,17 +1,34 @@
-from flask import Flask
+from flask import Flask, request, current_app
 from config import Config
 import pyrebase
 import firebase_admin
 from firebase_admin import credentials
+from flask_login import LoginManager
 
-app = Flask(__name__)
-app.config.from_object(Config)
+login_manager = LoginManager()
 
 firebase = pyrebase.initialize_app(Config.DB)
 db = firebase.database()
 pyr_auth = firebase.auth()
 
-cred = credentials.Certificate(Config.DB['serviceAccount'])
-firebase_admin.initialize_app(cred)
+# Checks for if there is already an active firebase app
+if (not len(firebase_admin._apps)):
+    cred = credentials.Certificate(Config.DB['serviceAccount'])
+    firebase_admin.initialize_app(cred)
 
-from app import routes
+def create_app(config_class=Config):
+
+    app = Flask(__name__)
+    app.config.from_object(Config)
+
+    login_manager.init_app(app)
+
+    from app.auth import bp as auth_bp
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+
+    from app.main import bp as main_bp
+    app.register_blueprint(main_bp)
+
+    return app
+
+from app import models

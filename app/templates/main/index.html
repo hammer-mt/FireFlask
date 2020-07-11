@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "main/base.html" %}
 
 {% block content %}
 
@@ -20,7 +20,7 @@
         </div>
         <div class="row center">
             <div class="col s12 m8 offset-m2">
-                <a href="{{ url_for('sign_up') }}" class="waves-effect waves-light btn-large">SIGN UP</a>
+                <a href="{{ url_for('auth.sign_up') }}" class="waves-effect waves-light btn-large">SIGN UP</a>
             </div>
         </div>
     </div>

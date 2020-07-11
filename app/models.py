@@ -45,7 +45,7 @@ class User(UserMixin):
     @staticmethod
     def auth(email, password):
         pyr_user = pyr_auth.sign_in_with_email_and_password(email, password)
-        print(pyr_user)
+        print('Sucessfully signed in user: {0}'.format(pyr_user['localId']))
         flask_user = User(
             uid=pyr_user['localId'],
             email=pyr_user['email'],
@@ -57,8 +57,6 @@ class User(UserMixin):
     @staticmethod
     def logout():
         logout_user()
-
-
 
 
 

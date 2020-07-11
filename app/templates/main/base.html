@@ -40,18 +40,18 @@
         <!-- NAVBAR -->
         <nav class="z-depth-0 grey lighten-4">
             <div class="nav-wrapper container">
-                <a href="{{ url_for('index') }}" class="brand-logo">
+                <a href="{{ url_for('main.index') }}" class="brand-logo">
                     <span class="grey-text">⚗️ FireFlask</span>
                 </a>
                 <ul id="nav-mobile" class="right hide-on-med-and-down">
                     {% if current_user.is_authenticated %}
                     <!-- Dropdown Structure -->
                     <ul id="dropdown1" class="dropdown-content">
-                        <li class="index"><a href="{{ url_for('index') }}">Home</a></li>
+                        <li class="index"><a href="{{ url_for('main.index') }}">Home</a></li>
                         <li><a href="#!">Account</a></li>
                         <li class="divider"></li>
                         <li>
-                            <a href="{{ url_for('sign_out') }}" class="grey-text">Sign Out</a>
+                            <a href="{{ url_for('auth.sign_out') }}" class="grey-text">Sign Out</a>
                         </li>
                     </ul>
                     <!-- Dropdown Trigger -->
@@ -61,10 +61,10 @@
 
                     {% else %}
                     <li id="sign_in">
-                        <a href="{{ url_for('sign_in') }}" class="grey-text">Sign In</a>
+                        <a href="{{ url_for('auth.sign_in') }}" class="grey-text">Sign In</a>
                     </li>
                     <li id="sign_up">
-                        <a href="{{ url_for('sign_up') }}" class="waves-effect waves-light btn">Sign Up</a>
+                        <a href="{{ url_for('auth.sign_up') }}" class="waves-effect waves-light btn">Sign Up</a>
                     </li>
                     {% endif %}
                 </span>
