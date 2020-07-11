@@ -1,4 +1,4 @@
-from flask import Flask, request, current_app
+from flask import Flask
 from config import Config
 import pyrebase
 import firebase_admin

@@ -1,12 +1,8 @@
 # To Do list
 
 ## Roadmap
-- Bootstrap / Materialize
-    - [https://github.com/iamshaunjp/firebase-auth](firebase-auth by the Net Ninja)
 - Cloud Functions
     - [Serverless Python Quickstart with Google Cloud Functions](https://dev.to/googlecloud/serverless-python-quickstart-with-google-cloud-functions-19bb)
-- Blueprints 
-    - [Flask Tutorial](https://flask.palletsprojects.com/en/1.1.x/tutorial/)
 - Testing 
     - [Testing Flask Applications](https://flask.palletsprojects.com/en/1.1.x/testing/)
     - [Running End to End tests as Google Cloud Functions](https://hackernoon.com/running-end-to-end-tests-as-google-cloud-functions-f5e34ffc3984)
@@ -14,6 +10,7 @@
     - [Testing External APIs With Mock Servers](https://realpython.com/testing-third-party-apis-with-mock-servers/)
     - [Run functions locally](https://firebase.google.com/docs/functions/local-emulator)
     - [Set up the Firebase Emulators](https://firebase.google.com/docs/rules/emulator-setup)
+    - [The Flask Mega-Tutorial](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world)
 - Deploy
     - [Building a Flask(Python) CRUD API with Cloud Firestore(Firebase) and Deploying on Cloud Run](https://medium.com/google-cloud/building-a-flask-python-crud-api-with-cloud-firestore-firebase-and-deploying-on-cloud-run-29a10c502877)
     - [Hosting Flask servers on Firebase from scratch](https://medium.com/firebase-developers/hosting-flask-servers-on-firebase-from-scratch-c97cfb204579)
@@ -23,9 +20,7 @@
 - More advanced auth (rest password, update profile, etc)
 - Teams / multi-tenancy
 - Pagination from database
-- Chron jobs
-- Automated data enrichment / processing
-- Sending email via sendgrid or similar
+- Sending email via sendgrid, firebase or similar
 - Connect to 3rd-party APIs
 - React 
     - [The Ultimate Flask Front-End](https://realpython.com/the-ultimate-flask-front-end/)
