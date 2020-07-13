@@ -38,7 +38,7 @@
     </head>
     <body class="grey lighten-3">
         {% if current_user.is_authenticated and not current_user.verified %}
-        <p id="verifyEmail" class="center-align red lighten-4">
+        <p id="verify-email" class="center-align red lighten-4">
             Please verify your email address. &nbsp;
             <a href="{{ url_for('auth.resend_verification') }}">Resend</a>
         </p>
@@ -53,9 +53,9 @@
                 <ul id="nav-mobile" class="right hide-on-med-and-down">
                     {% if current_user.is_authenticated %}
                     <!-- Dropdown Structure -->
-                    <ul id="dropdown1" class="dropdown-content">
-                        <li class="index"><a href="{{ url_for('main.index') }}">Home</a></li>
-                        <li><a href="#!">Account</a></li>
+                    <ul id="dropdown" class="dropdown-content">
+                        <li id="main-index" class="index"><a href="{{ url_for('main.index') }}">Home</a></li>
+                        <li id="auth-profile"><a href="{{ url_for('auth.profile') }}">Profile</a></li>
                         <li class="divider"></li>
                         <li>
                             <a href="{{ url_for('auth.sign_out') }}" class="grey-text">Sign Out</a>
@@ -63,14 +63,14 @@
                     </ul>
                     <!-- Dropdown Trigger -->
                     <li>
-                        <a class="dropdown-trigger grey-text" href="#!" data-target="dropdown1">Settings<i class="material-icons right">arrow_drop_down</i></a>
+                        <a class="dropdown-trigger grey-text" href="#!" data-target="dropdown">Settings<i class="material-icons right">arrow_drop_down</i></a>
                     </li>
 
                     {% else %}
-                    <li id="sign_in">
+                    <li id="auth-sign_in">
                         <a href="{{ url_for('auth.sign_in') }}" class="grey-text">Sign In</a>
                     </li>
-                    <li id="sign_up">
+                    <li id="auth-sign_up">
                         <a href="{{ url_for('auth.sign_up') }}" class="waves-effect waves-light btn">Sign Up</a>
                     </li>
                     {% endif %}
@@ -106,7 +106,8 @@
         </footer>
         <script>
             $(document).ready(function () {
-                $("#{{request.endpoint}}").addClass("active");
+                var endpoint = "#{{request.endpoint}}".replace(/\./g, "-");
+                $(endpoint).addClass("active");
                 $(".dropdown-trigger").dropdown();
             })
         </script>  

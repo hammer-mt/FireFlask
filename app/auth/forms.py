@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
 from wtforms.validators import DataRequired, Email, Length
+from flask_wtf.file import FileField, FileAllowed, FileRequired
 
 class SignUpForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
@@ -17,3 +18,10 @@ class SignInForm(FlaskForm):
 class ResetPasswordForm(FlaskForm):
     email = StringField('Email address', validators=[DataRequired(), Email()])
     submit = SubmitField('RESET PASSWORD')
+
+class EditProfileForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    email = StringField('Email address', validators=[DataRequired(), Email()])
+    job_title = StringField('Job title')
+    photo = FileField('image', validators=[FileAllowed(['jpg', 'png'], 'Images only!')])
+    submit = SubmitField('UPDATE')

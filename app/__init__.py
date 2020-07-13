@@ -10,6 +10,7 @@ login_manager = LoginManager()
 firebase = pyrebase.initialize_app(Config.DB)
 db = firebase.database()
 pyr_auth = firebase.auth()
+pyr_store = firebase.storage()
 
 # Checks for if there is already an active firebase app
 if (not len(firebase_admin._apps)):

@@ -1,0 +1,63 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+<h3>Profile</h3>
+<p>Your user profile information.</p>
+
+<div class="row">
+    <div class="col s12 m8 l7">
+        <div class="card-panel">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>ID</td>
+                        <td class="grey-text">{{ current_user.id }}</td>
+                    </tr>
+                    <tr>
+                        <td>Created</td>
+                        <td class="grey-text">{{ created_date }}</td>
+                    </tr>
+                    <tr>
+                        <td>Name</td>
+                        <td>{{ current_user.name }}</td>
+                    </tr>
+                    <tr>
+                        <td>Email</td>
+                        <td>{{ current_user.email }}</td>
+                    </tr>
+                    <tr>
+                        <td>Verified</td>
+                        {% if not current_user.verified %} 
+                        <td class="red-text">{{ current_user.verified }}
+                            &nbsp; 
+                            <a href="{{ url_for('auth.resend_verification') }}">Resend</a>
+                        </td>
+                        {% else %}
+                        <td class="grey-text">{{ current_user.verified }}</td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <td>Password</td>
+                        <td>
+                            &#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;
+                            &nbsp;
+                            <a href="{{ url_for('auth.reset_password') }}">Reset</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Job Title</td>
+                        <td>{{ meta.job_title }}</td>
+                    </tr>                   
+                </tbody>
+            </table>
+            <p class="right-align">
+                <a href="{{ url_for('auth.edit_profile') }}">
+                    <button type="submit" name="btn" class="waves-effect waves-light btn blue">
+                        EDIT
+                    </button>
+                </a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
