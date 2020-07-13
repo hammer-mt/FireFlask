@@ -2,6 +2,8 @@
 
 Fireflask is a boilerplate template for spinning up a Python Flask application with a Firebase NoSQL database / cloud function backend, and Materalize CSS.
 
+This is my attempt to make a kind of [rails for saas](https://www.indiehackers.com/post/ror-saas-boilerplate-app-market-need-fb7af3d8db)' boilerplate template, something that implements 90% of the same features [every SaaS application needs](https://twitter.com/2michaeltaylor/status/1275132718729375746?s=20), but on a Python backend with NoSQL so it's an accessible next step to any data scientist graduating from jupyter notebooks. 
+
 ## How to use
 
 Navigate to your project folder and run this command (replace MyProjectName)
