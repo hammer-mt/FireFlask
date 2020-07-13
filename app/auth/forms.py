@@ -13,3 +13,7 @@ class SignInForm(FlaskForm):
     email = StringField('Email address', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('SIGN IN')
+
+class ResetPasswordForm(FlaskForm):
+    email = StringField('Email address', validators=[DataRequired(), Email()])
+    submit = SubmitField('RESET PASSWORD')

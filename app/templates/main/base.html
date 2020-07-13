@@ -37,6 +37,13 @@
         {% endif %}
     </head>
     <body class="grey lighten-3">
+        {% if current_user.is_authenticated and not current_user.verified %}
+        <p id="verifyEmail" class="center-align red lighten-4">
+            Please verify your email address. &nbsp;
+            <a href="{{ url_for('auth.resend_verification') }}">Resend</a>
+        </p>
+
+        {% endif %}
         <!-- NAVBAR -->
         <nav class="z-depth-0 grey lighten-4">
             <div class="nav-wrapper container">

@@ -6,3 +6,7 @@ body {
 main {
     flex: 1 0 auto;
 }
+#verifyEmail {
+    padding: 5px;
+    margin-bottom: 0px;
+}

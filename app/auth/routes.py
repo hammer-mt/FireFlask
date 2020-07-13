@@ -1,9 +1,9 @@
 from flask import render_template, flash, redirect, url_for, session, escape
 from flask_login import current_user, login_required
-from app.auth.forms import SignInForm, SignUpForm
+from app.auth.forms import SignInForm, SignUpForm, ResetPasswordForm
 from app.auth import bp
 from app import db, login_manager
-from app.models import User
+from app.auth.models import User
 
 import requests
 import json
@@ -70,3 +70,34 @@ def sign_out():
     User.logout()
     flash("User {} signed out".format(user_id), 'blue')
     return redirect(url_for("main.index"))
+
+@bp.route('/reset_password', methods=['GET', 'POST'])
+def reset_password():
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        email = form.email.data
+
+        #reset password
+        try:
+            User.reset(email)
+
+            # Reset successful
+            flash('Password reset for {}'.format(
+                email), 'teal')
+            return redirect(url_for('auth.sign_in'))
+
+        except Exception as e:
+            # Reset unsuccessful
+            error_json = e.args[1]
+            error = json.loads(error_json)['error']['message']
+            flash("Error: {}".format(error), 'red')
+            
+            return render_template('auth/reset_password.html', title='Reset Password', form=form)
+        
+    return render_template('auth/reset_password.html', title='Reset Password', form=form)
+
+@bp.route('/resend_verification', methods=['GET'])
+def resend_verification():
+    flash('Sign in again to resend verification email', 'orange')
+    
+    return redirect(url_for('auth.sign_in'))
