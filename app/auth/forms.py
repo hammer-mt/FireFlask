@@ -25,3 +25,7 @@ class EditProfileForm(FlaskForm):
     job_title = StringField('Job title')
     photo = FileField('image', validators=[FileAllowed(['jpg', 'png'], 'Images only!')])
     submit = SubmitField('UPDATE')
+
+class UploadPhotoForm(FlaskForm):
+    photo = FileField('image', validators=[FileAllowed(['jpg', 'png'], 'Images only!')])
+    submit = SubmitField('UPLOAD')

@@ -1,0 +1,36 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+<h3>Upload Photo</h3>
+<p>Upload a new profile photo.</p>
+
+<div class="row">
+    <div class="col s12 m5">
+        <div class="card-panel">
+            <form action="" method="post" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+
+                <div class="file-field input-field">
+                    <div class="btn">
+                        <span>SELECT</span>
+                        {{ form.photo() }}
+                    </div>
+                    <div class="file-path-wrapper">
+                        <input class="file-path validate" type="text">
+                    </div>
+                    {% for error in form.photo.errors %}
+                    <span class="helper-text" data-error="[{{ error }}]" data-success=""></span>
+                    {% endfor %}
+                </div>
+
+                <p class="right-align">
+                    <button type="submit" name="btn" class="waves-effect waves-light btn blue">
+                    UPLOAD
+                    </button>
+                </p>
+            </form>
+        </div>
+        <a href="{{ url_for('auth.profile') }}">< Back to Profile</a>
+    </div>
+</div>
+{% endblock %}

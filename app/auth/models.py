@@ -1,15 +1,18 @@
 from flask_login import UserMixin
-from app import pyr_auth, db
+from app import pyr_auth, pyr_store, db
 from firebase_admin import auth
 from flask_login import login_user, logout_user
+import os
+import tempfile
 
 class User(UserMixin):
-    def __init__(self, uid, email, name, verified, created):
+    def __init__(self, uid, email, name, verified, created, photo_url):
         self.id = uid
         self.email = email
         self.name = name
         self.verified = verified
         self.created = created
+        self.photo_url = photo_url
     
     @staticmethod
     def get(user_id):
@@ -21,7 +24,8 @@ class User(UserMixin):
                 email=firebase_user.email,
                 name=firebase_user.display_name,
                 verified=firebase_user.email_verified,
-                created=firebase_user.user_metadata.creation_timestamp
+                created=firebase_user.user_metadata.creation_timestamp,
+                photo_url=firebase_user.photo_url
             )
             return flask_user
         except Exception as e:
@@ -48,7 +52,8 @@ class User(UserMixin):
             email=firebase_user.email,
             name=firebase_user.display_name,
             verified=firebase_user.email_verified,
-            created=firebase_user.user_metadata.creation_timestamp
+            created=firebase_user.user_metadata.creation_timestamp,
+            photo_url=firebase_user.photo_url
         )
         login_user(flask_user, remember=True)
         return flask_user
@@ -65,13 +70,16 @@ class User(UserMixin):
             pyr_auth.send_email_verification(pyr_user['idToken'])
             print("Sent email verification")
 
+        firebase_user = auth.get_user(pyr_user['localId'])
+
         print('Sucessfully signed in user: {0}'.format(pyr_user['localId']))
         flask_user = User(
             uid=pyr_user['localId'],
             email=pyr_user['email'],
             name=pyr_user['displayName'],
             verified=is_verified,
-            created=pyr_user_info['users'][0]['createdAt']
+            created=pyr_user_info['users'][0]['createdAt'],
+            photo_url=firebase_user.photo_url
         )
         login_user(flask_user, remember=True)
         return flask_user
@@ -115,6 +123,28 @@ class User(UserMixin):
             "job_title": job_title
         })
 
+    def upload(self, photo):
+
+        temp = tempfile.NamedTemporaryFile(delete=False)
+
+        # Save temp image
+        photo.save(temp.name)
+
+        pyr_store.child('profiles/{}/{}'.format(self.id, temp.name)).put(temp.name)
+
+        photo_url = pyr_store.child('profiles/{}/{}'.format(self.id, temp.name)).get_url(None)
+
+        auth.update_user(
+            self.id,
+            photo_url=photo_url
+        )
+        self.photo_url = photo_url
+
+        # Clean-up temp image
+        temp.close()
+        os.remove(temp.name)
+
+        return photo_url
 
             
 

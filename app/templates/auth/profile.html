@@ -10,6 +10,21 @@
             <table>
                 <tbody>
                     <tr>
+                        <td>Photo</td>
+                        <td class="col s6">
+                            <div class="row center-align" style="margin-bottom: 0px;">
+                                {% if current_user.photo_url %}
+                                <img src="{{ current_user.photo_url }}" class="circle responsive-img">
+                                {% else %}
+                                <img src="https://via.placeholder.com/150" class="circle responsive-img">
+                                {% endif %}
+                            </div>
+                            <div class="row center-align">
+                                <a href="{{ url_for('auth.upload_photo') }}">Upload</a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
                         <td>ID</td>
                         <td class="grey-text">{{ current_user.id }}</td>
                     </tr>

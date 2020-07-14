@@ -1,14 +1,13 @@
 from flask import render_template, flash, redirect, url_for, session, escape
 from flask_login import current_user, login_required
-from app.auth.forms import SignInForm, SignUpForm, ResetPasswordForm, EditProfileForm
+from app.auth.forms import SignInForm, SignUpForm, ResetPasswordForm, EditProfileForm, UploadPhotoForm
 from app.auth import bp
-from app import db, pyr_store, login_manager
+from app import login_manager
 from app.auth.models import User
 
 import requests
 import json
 from datetime import datetime
-import os
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -124,25 +123,15 @@ def edit_profile():
         name = form.name.data
         email = form.email.data
         job_title = form.job_title.data
-        photo = form.photo.data
-
-        photo.save(current_user.id)
-        pyr_store.child('profiles/{}'.format(current_user.id)).put(current_user.id)
-
-        # Clean-up temp image
-        os.remove(current_user.id)
-
-        photo_url = pyr_store.child('profiles/{}'.format(current_user.id)).get_url()
 
         #edit a user
         try:
-            current_user.edit(name, email, job_title, photo_url)
+            current_user.edit(name, email, job_title)
 
             # Update successful
-            flash('User {}, updated with email={}, name={}, job_title={}, photo={}'.format(
+            flash('User {}, updated with email={}, name={}, job_title={}'.format(
                  current_user.id, current_user.email, current_user.name, 
-                 current_user.get_meta()['job_title'], current_user.photo
-                 ), 'teal')
+                 current_user.get_meta()['job_title']), 'teal')
 
             return redirect(url_for('auth.profile'))
 
@@ -160,3 +149,27 @@ def edit_profile():
         form.job_title.data = meta['job_title']
         
     return render_template('auth/edit_profile.html', title='Edit Profile', form=form)
+
+@bp.route('/profile/upload', methods=['GET', 'POST'])
+@login_required
+def upload_photo():
+    form = UploadPhotoForm()
+
+    if form.validate_on_submit():
+        photo = form.photo.data
+
+        #upload an image
+        try:
+            photo_url = current_user.upload(photo)
+
+            # Update successful
+            flash('User {}, updated photo={}'.format(current_user.id, photo_url), 'teal')
+            return redirect(url_for('auth.profile'))
+
+        except Exception as e:
+            # Update unsuccessful
+            error_json = e.args[1]
+            error = json.loads(error_json)['error']['message']
+            flash("Error: {}".format(error), 'red')
+        
+    return render_template('auth/upload_photo.html', title='Upload Photo', form=form)
