@@ -1,9 +1,9 @@
 from flask import render_template, flash, redirect, url_for, session, escape
 from flask_login import current_user, login_required
-from app.auth.forms import SignInForm, SignUpForm, ResetPasswordForm, EditProfileForm, UploadPhotoForm
+from app.auth.forms import SignInForm, SignUpForm, ResetPasswordForm, EditProfileForm, UploadPhotoForm, TeamForm
 from app.auth import bp
 from app import login_manager
-from app.auth.models import User
+from app.auth.models import User, Team
 
 import requests
 import json
@@ -109,13 +109,13 @@ def resend_verification():
 
 @bp.route('/profile', methods=['GET'])
 @login_required
-def profile():
+def view_profile():
     meta = current_user.get_meta()
     timestamp = current_user.created
     created_date = datetime.fromtimestamp(timestamp / 1000)
     format_date = created_date.strftime("%b %d %Y %H:%M:%S")
 
-    return render_template('auth/profile.html',  title='View Profile', meta=meta,
+    return render_template('auth/view_profile.html',  title='View Profile', meta=meta,
         created_date=format_date)
 
 @bp.route('/profile/edit', methods=['GET', 'POST'])
@@ -137,7 +137,7 @@ def edit_profile():
                  current_user.id, current_user.email, current_user.name, 
                  current_user.get_meta()['job_title']), 'teal')
 
-            return redirect(url_for('auth.profile'))
+            return redirect(url_for('auth.view_profile'))
 
         except Exception as e:
             # Update unsuccessful
@@ -154,6 +154,7 @@ def edit_profile():
         
     return render_template('auth/edit_profile.html', title='Edit Profile', form=form)
 
+
 @bp.route('/profile/upload', methods=['GET', 'POST'])
 @login_required
 def upload_photo():
@@ -168,7 +169,7 @@ def upload_photo():
 
             # Update successful
             flash('User {}, updated photo={}'.format(current_user.id, photo_url), 'teal')
-            return redirect(url_for('auth.profile'))
+            return redirect(url_for('auth.view_profile'))
 
         except Exception as e:
             # Update unsuccessful
@@ -177,3 +178,65 @@ def upload_photo():
             flash("Error: {}".format(error), 'red')
         
     return render_template('auth/upload_photo.html', title='Upload Photo', form=form)
+
+
+@bp.route('/add_team', methods=['GET', 'POST'])
+# @login_required
+def add_team():
+    form = TeamForm()
+
+    if form.validate_on_submit():
+        name = form.name.data
+
+        #create a team
+        try:
+            team = Team.create(name)
+
+            # Update successful
+            flash('Team id={}, created with name={}'.format(team.id, team.name), 'teal')
+            return redirect(url_for('auth.view_team', team_id=team.id))
+
+        except Exception as e:
+            # Update unsuccessful
+            flash("Error: {}".format(e), 'red')
+        
+    return render_template('auth/add_team.html', title='Add Team', form=form)
+
+
+@bp.route('/teams/<team_id>', methods=['GET'])
+# @login_required
+def view_team(team_id):
+    team = Team.get(team_id)
+    title = 'View Team {}'.format(team.name)
+        
+    return render_template('auth/view_team.html', title=title, team=team)
+
+
+@bp.route('/teams/<team_id>/edit', methods=['GET', 'POST'])
+# @login_required
+def edit_team(team_id):
+    form = TeamForm()
+
+    team = Team.get(team_id)
+
+    if form.validate_on_submit():
+        name = form.name.data
+
+        #edit a team
+        try:
+            team.update(name)
+
+            # Update successful
+            flash('Team {}, updated with name={}'.format(
+                 team.id, team.name), 'teal')
+
+            return redirect(url_for('auth.view_team', team_id=team.id))
+
+        except Exception as e:
+            # Update unsuccessful
+            flash("Error: {}".format(e), 'red')
+
+    form.name.data = team.name
+        
+    return render_template('auth/edit_team.html', title='Edit Team', form=form, 
+        team=team)

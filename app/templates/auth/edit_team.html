@@ -1,0 +1,29 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+<h3>Edit Team</h3>
+<p>Update your team name.</p>
+
+<div class="row">
+    <div class="col s12 m5">
+        <div class="card-panel">
+            <form action="" method="post">
+                {{ form.hidden_tag() }}
+                <p class="input-field">
+                    {{ form.name.label }}<br>
+                    {{ form.name(size=32, class_="validate") }}<br>
+                    {% for error in form.name.errors %}
+                    <span class="helper-text" data-error="[{{ error }}]" data-success=""></span>
+                    {% endfor %}
+                </p>
+                <p class="right-align">
+                    <button type="submit" name="btn" class="waves-effect waves-light btn blue">
+                    UPDATE
+                    </button>
+                </p>
+            </form>
+        </div>
+        <a href="{{ url_for('auth.view_team', team_id=team.id) }}">< Back to Team</a>
+    </div>
+</div>
+{% endblock %}

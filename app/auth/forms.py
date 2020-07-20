@@ -29,3 +29,7 @@ class EditProfileForm(FlaskForm):
 class UploadPhotoForm(FlaskForm):
     photo = FileField('image', validators=[FileAllowed(['jpg', 'png'], 'Images only!')])
     submit = SubmitField('UPLOAD')
+
+class TeamForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    submit = SubmitField('SUBMIT')

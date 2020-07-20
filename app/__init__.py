@@ -8,7 +8,7 @@ from flask_login import LoginManager
 login_manager = LoginManager()
 
 firebase = pyrebase.initialize_app(Config.DB)
-db = firebase.database()
+pyr_db = firebase.database()
 pyr_auth = firebase.auth()
 pyr_store = firebase.storage()
 

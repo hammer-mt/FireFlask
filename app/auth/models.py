@@ -1,5 +1,5 @@
 from flask_login import UserMixin
-from app import pyr_auth, pyr_store, db
+from app import pyr_auth, pyr_store, pyr_db
 from firebase_admin import auth
 from flask_login import login_user, logout_user
 import os
@@ -116,11 +116,11 @@ class User(UserMixin):
         self.set_meta(job_title)
 
     def get_meta(self):
-        meta = db.child('users').child(self.id).get().val()
+        meta = pyr_db.child('users').child(self.id).get().val()
         return meta
 
     def set_meta(self, job_title):
-        db.child('users').child(self.id).set({
+        pyr_db.child('users').child(self.id).set({
             "job_title": job_title
         })
 
@@ -153,8 +153,37 @@ class User(UserMixin):
             digest, size)
 
             
+class Team():
+    def __init__(self, id_, name):
+        self.id = id_
+        self.name = name
+    
+    @staticmethod
+    def get(team_id):
+        team_data = pyr_db.child('teams').child(team_id).get().val()
+        team = Team(
+            id_=team_id, 
+            name=team_data['name']
+        )
+        return team
 
+    @staticmethod
+    def create(name):
+        team_res = pyr_db.child('teams').push({
+            "name": name
+        })
+        team_id = team_res['name'] # api sends id back as 'name'
+        print('Sucessfully created new team: {0}'.format(team_id))
 
+        team = Team.get(team_id)
+        return team
+
+    def update(self, name):
+        pyr_db.child('teams').child(self.id).update({
+            "name": name
+        })
+
+        self.name = name
 
 
         
