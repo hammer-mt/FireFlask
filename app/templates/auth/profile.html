@@ -16,7 +16,7 @@
                                 {% if current_user.photo_url %}
                                 <img src="{{ current_user.photo_url }}" class="circle responsive-img">
                                 {% else %}
-                                <img src="https://via.placeholder.com/150" class="circle responsive-img">
+                                <img src="{{ current_user.avatar(128) }}" class="circle responsive-img">
                                 {% endif %}
                             </div>
                             <div class="row center-align">

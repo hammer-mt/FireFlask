@@ -4,6 +4,7 @@ from firebase_admin import auth
 from flask_login import login_user, logout_user
 import os
 import tempfile
+from hashlib import md5
 
 class User(UserMixin):
     def __init__(self, uid, email, name, verified, created, photo_url):
@@ -145,6 +146,11 @@ class User(UserMixin):
         os.remove(temp.name)
 
         return photo_url
+
+    def avatar(self, size):
+        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+        return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
+            digest, size)
 
             
 

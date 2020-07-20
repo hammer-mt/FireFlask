@@ -58,8 +58,12 @@ def sign_up():
 
         except Exception as e:
             # Sign up unsuccessful
-            error_json = e.args[1]
-            error = json.loads(error_json)['error']['message']
+
+            if type(e.args[0]) == str:
+                 error = e.args[0] # weird bug where not returning json
+            else:
+                error_json = e.args[1]
+                error = json.loads(error_json)['error']['message']
             flash("Error: {}".format(error), 'red')
         
     return render_template('auth/sign_up.html', title='Sign Up', form=form)
