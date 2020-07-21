@@ -19,7 +19,7 @@
                     </tr>                
                 </tbody>
             </table>
-            <p class="right-align">
+            <p>
                 <a href="{{ url_for('auth.edit_team', team_id=team.id) }}">
                     <button type="submit" name="btn" class="waves-effect waves-light btn blue">
                         EDIT
@@ -27,6 +27,37 @@
                 </a>
             </p>
         </div>
+        
     </div>
 </div>
+
+<div class="row">
+    <div class="col s4">
+        <h5>Users</h5>
+    </div>
+</div>
+<div class="row">
+    
+    {% for member in team_members %}
+    <div class="col s2">
+        <div class="card-panel">
+            <p>Name: {{ member.name }}</p>
+            <p>Role: {{ member.role }}</p>
+        </div>
+
+    </div>
+    
+    {% endfor %}
+</div>
+<div class="row">
+    <div class="col s2">
+        <a href="{{ url_for('auth.invite_user', team_id=team.id) }}">
+            <button type="submit" name="btn" class="waves-effect waves-light btn red">
+                INVITE
+            </button>
+        </a>
+    </div>
+</div>
+
+
 {% endblock %}

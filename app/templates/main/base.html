@@ -55,7 +55,8 @@
                     <!-- Dropdown Structure -->
                     <ul id="dropdown" class="dropdown-content">
                         <li id="main-index" class="index"><a href="{{ url_for('main.index') }}">Home</a></li>
-                        <li id="auth-profile"><a href="{{ url_for('auth.profile') }}">Profile</a></li>
+                        <li id="auth-view_profile"><a href="{{ url_for('auth.view_profile') }}">Profile</a></li>
+                        <li id="auth-list_teams"><a href="{{ url_for('auth.list_teams') }}">Teams</a></li>
                         <li class="divider"></li>
                         <li>
                             <a href="{{ url_for('auth.sign_out') }}" class="grey-text">Sign Out</a>
@@ -109,6 +110,7 @@
                 var endpoint = "#{{request.endpoint}}".replace(/\./g, "-");
                 $(endpoint).addClass("active");
                 $(".dropdown-trigger").dropdown();
+                $('select').formSelect();
             })
         </script>  
     </body>

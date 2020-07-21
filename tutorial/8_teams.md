@@ -446,7 +446,9 @@ class InviteForm(FlaskForm):
     email = StringField('Email address', validators=[DataRequired(), Email()])
     
     available_roles = ['READ', 'EDIT', 'ADMIN', 'OWNER']
-    role = SelectField('Role', choices=available_roles, validators=[DataRequired()])
+    role_choices = [(role, role) for role in available_roles] # format required by flask wtf
+
+    role = SelectField('Role', choices=role_choices, default='READ', validators=[DataRequired()])
     
     submit = SubmitField('INVITE')
 ```
@@ -455,24 +457,24 @@ We're providing an email because the user won't know the user id. So we need a m
 
 ```
 @staticmethod
-    def get_by_email(email):
-        try:
-            firebase_user = auth.get_user_by_email(email)
+def get_by_email(email):
+    try:
+        firebase_user = auth.get_user_by_email(email)
 
-            print('Successfully fetched user data: {0}'.format(firebase_user.uid))
-            flask_user = User(
-                uid=firebase_user.uid,
-                email=firebase_user.email,
-                name=firebase_user.display_name,
-                verified=firebase_user.email_verified,
-                created=firebase_user.user_metadata.creation_timestamp,
-                photo_url=firebase_user.photo_url
-            )
-            return flask_user
-            
-        except Exception as e:
-            print(e)
-            return None
+        print('Successfully fetched user data: {0}'.format(firebase_user.uid))
+        flask_user = User(
+            uid=firebase_user.uid,
+            email=firebase_user.email,
+            name=firebase_user.display_name,
+            verified=firebase_user.email_verified,
+            created=firebase_user.user_metadata.creation_timestamp,
+            photo_url=firebase_user.photo_url
+        )
+        return flask_user
+        
+    except Exception as e:
+        print(e)
+        return None
 ```
 
 Ok like before let's create a page where we can add memberships.
@@ -531,18 +533,67 @@ def invite(email):
 
     pyr_user_info = pyr_auth.get_account_info(pyr_user['idToken'])
 
+    print(pyr_user)
+    print(pyr_user_info)
+
     flask_user = User(
         uid=pyr_user['localId'],
         email=pyr_user['email'],
-        name=pyr_user['displayName'],
-        verified=pyr_user_info['users'][0]['emailVerified'],
+        name="",
+        verified=False,
         created=pyr_user_info['users'][0]['createdAt'],
-        photo_url=pyr_user_info['users'][0]['photoUrl']
+        photo_url=""
     )
     return flask_user
 ```
 
+Now this is what the route looks like.
 
+```
+@bp.route('/teams/<team_id>/invite', methods=['GET', 'POST'])
+@login_required
+def invite_user(team_id):
+    form = InviteForm()
+
+    team = Team.get(team_id)
+
+    if form.validate_on_submit():
+        email = form.email.data
+        role = form.role.data
+
+        #create a team
+        try:
+            user = User.get_by_email(email)
+
+            if not user:
+                user = User.invite(email)
+                
+            membership = Membership.create(user.id, team_id, role)
+
+            # Update successful
+            flash('User {} added to team {} with role {}'.format(membership.user_id, membership.team_id,  membership.role), 'teal')
+            return redirect(url_for('auth.view_team', team_id=team.id))
+
+        except Exception as e:
+            # Update unsuccessful
+            flash("Error: {}".format(e), 'red')
+        
+    return render_template('auth/invite_user.html', title='Invite User', form=form, team=team)
+```
+
+Let's add links to and from the team page and invite page.
+
+`<a href="{{ url_for('auth.view_team', team_id=team_id) }}">< Back to Team</a>`
+
+`<a href="{{ url_for('auth.invite_user', team_id=team.id) }}">Invite users</a>`
+
+One thing I forgot - to get select fields working you have to use materialize CSS to do this:
+
+`$('select').formSelect();`
+
+Put that in the base template in the document ready part of the scripts.
+
+also in routes switch any team_ids converted over to `team = Team.get(team_id)`
 
 So the process is:
 - visit all teams page for user
@@ -555,5 +606,6 @@ So the process is:
 - create membership between user_id and team_id
 - load page for that team's users, with new user present
 
-
 We've built the ability to add memberships / invite users, but we haven't created the all teams page, or the users per team page.
+
+P.S. one great trick to stop having to log in all the time, is to just comment out @login_required while you're working on it.

@@ -182,13 +182,16 @@ class User(UserMixin):
 
         pyr_user_info = pyr_auth.get_account_info(pyr_user['idToken'])
 
+        print(pyr_user)
+        print(pyr_user_info)
+
         flask_user = User(
             uid=pyr_user['localId'],
             email=pyr_user['email'],
-            name=pyr_user['displayName'],
-            verified=pyr_user_info['users'][0]['emailVerified'],
+            name="",
+            verified=False,
             created=pyr_user_info['users'][0]['createdAt'],
-            photo_url=pyr_user_info['users'][0]['photoUrl']
+            photo_url=""
         )
         return flask_user
 
@@ -263,6 +266,18 @@ class Membership():
         })
 
         self.role = role
+
+    @staticmethod
+    def get_users_by_team(team_id):
+        users_by_team = pyr_db.child("memberships").order_by_child("team_id").equal_to(team_id).get()
+
+        return users_by_team
+
+    @staticmethod
+    def get_teams_by_user(user_id):
+        teams_by_user = pyr_db.child("memberships").order_by_child("user_id").equal_to(user_id).get()
+
+        return teams_by_user
 
 
 

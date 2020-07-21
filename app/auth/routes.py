@@ -181,7 +181,7 @@ def upload_photo():
 
 
 @bp.route('/add_team', methods=['GET', 'POST'])
-# @login_required
+@login_required
 def add_team():
     form = TeamForm()
 
@@ -204,16 +204,28 @@ def add_team():
 
 
 @bp.route('/teams/<team_id>', methods=['GET'])
-# @login_required
+@login_required
 def view_team(team_id):
     team = Team.get(team_id)
+    users_by_team = Membership.get_users_by_team(team_id)
+    team_members = []
+    for membership in users_by_team:
+        membership_data = membership.val()
+        user = User.get(membership_data['user_id'])
+
+        member = {
+            "name": user.name,
+            "role": membership_data['role'],
+        }
+        team_members.append(member)
+
     title = 'View Team {}'.format(team.name)
         
-    return render_template('auth/view_team.html', title=title, team=team)
+    return render_template('auth/view_team.html', title=title, team=team, team_members=team_members)
 
 
 @bp.route('/teams/<team_id>/edit', methods=['GET', 'POST'])
-# @login_required
+@login_required
 def edit_team(team_id):
     form = TeamForm()
 
@@ -241,10 +253,12 @@ def edit_team(team_id):
     return render_template('auth/edit_team.html', title='Edit Team', form=form, 
         team=team)
 
-@bp.route('/teams/<team_id>/add', methods=['GET', 'POST'])
-# @login_required
+@bp.route('/teams/<team_id>/invite', methods=['GET', 'POST'])
+@login_required
 def invite_user(team_id):
     form = InviteForm()
+
+    team = Team.get(team_id)
 
     if form.validate_on_submit():
         email = form.email.data
@@ -261,10 +275,16 @@ def invite_user(team_id):
 
             # Update successful
             flash('User {} added to team {} with role {}'.format(membership.user_id, membership.team_id,  membership.role), 'teal')
-            return redirect(url_for('auth.view_team', team_id=team_id))
+            return redirect(url_for('auth.view_team', team_id=team.id))
 
         except Exception as e:
             # Update unsuccessful
             flash("Error: {}".format(e), 'red')
         
-    return render_template('auth/invite_user.html', title='Invite User', form=form)
+    return render_template('auth/invite_user.html', title='Invite User', form=form, team=team)
+
+@bp.route('/teams', methods=['GET'])
+@login_required
+def list_teams():
+    teams_list = Membership.get_teams_by_user(current_user.id)
+    return render_template('auth/list_teams.html', title='Teams', teams_list=teams_list)

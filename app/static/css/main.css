@@ -10,3 +10,6 @@ main {
     padding: 5px;
     margin-bottom: 0px;
 }
+strong {
+    font-weight:bold !important;
+}

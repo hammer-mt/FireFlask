@@ -38,6 +38,8 @@ class InviteForm(FlaskForm):
     email = StringField('Email address', validators=[DataRequired(), Email()])
     
     available_roles = ['READ', 'EDIT', 'ADMIN', 'OWNER']
-    role = SelectField('Role', choices=available_roles, validators=[DataRequired()])
+    role_choices = [(role, role) for role in available_roles] # format required by flask wtf
+
+    role = SelectField('Role', choices=role_choices, default='READ', validators=[DataRequired()])
     
     submit = SubmitField('INVITE')

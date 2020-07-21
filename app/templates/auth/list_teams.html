@@ -1,0 +1,21 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+<h3>Teams</h3>
+<p>All the teams you have access to.</p>
+
+<div class="row">
+    
+    {% for team in teams_list %}
+    <div class="col s2">
+        <div class="card-panel">
+            <p>{{ team.val() }}</p>
+        </div>
+
+    </div>
+    
+    {% endfor %}
+</div>
+
+
+{% endblock %}

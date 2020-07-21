@@ -2,7 +2,7 @@
 
 {% block content %}
 <h3>Invite User</h3>
-<p>Add a new user to your team.</p>
+<p>Add a new user to the <strong class="text-bold">{{ team.name }}</strong> team.</p>
 
 <div class="row">
     <div class="col s12 m5">
@@ -30,6 +30,7 @@
                 </p>
             </form>
         </div>
+        <a href="{{ url_for('auth.view_team', team_id=team.id) }}">< Back to Team</a>
     </div>
 </div>
 {% endblock %}
