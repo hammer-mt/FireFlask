@@ -152,6 +152,46 @@ class User(UserMixin):
         return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
             digest, size)
 
+    @staticmethod
+    def get_by_email(email):
+        try:
+            firebase_user = auth.get_user_by_email(email)
+
+            print('Successfully fetched user data: {0}'.format(firebase_user.uid))
+            flask_user = User(
+                uid=firebase_user.uid,
+                email=firebase_user.email,
+                name=firebase_user.display_name,
+                verified=firebase_user.email_verified,
+                created=firebase_user.user_metadata.creation_timestamp,
+                photo_url=firebase_user.photo_url
+            )
+            return flask_user
+
+        except Exception as e:
+            print(e)
+            return None
+
+    @staticmethod
+    def invite(email):
+        temp_pass = md5(email.lower().encode('utf-8')).hexdigest()
+
+        # invite and send password reset
+        pyr_user = pyr_auth.create_user_with_email_and_password(email, temp_pass)
+        pyr_auth.send_password_reset_email(email)
+
+        pyr_user_info = pyr_auth.get_account_info(pyr_user['idToken'])
+
+        flask_user = User(
+            uid=pyr_user['localId'],
+            email=pyr_user['email'],
+            name=pyr_user['displayName'],
+            verified=pyr_user_info['users'][0]['emailVerified'],
+            created=pyr_user_info['users'][0]['createdAt'],
+            photo_url=pyr_user_info['users'][0]['photoUrl']
+        )
+        return flask_user
+
             
 class Team():
     def __init__(self, id_, name):
@@ -186,7 +226,44 @@ class Team():
         self.name = name
 
 
-        
+class Membership():
+    def __init__(self, id_, user_id, team_id, role):
+        self.id = id_
+        self.user_id = user_id
+        self.team_id = team_id
+        self.role = role
+    
+    @staticmethod
+    def get(membership_id):
+        membership_data = pyr_db.child('memberships').child(membership_id).get().val()
+        membership = Membership(
+            id_=membership_id, 
+            user_id=membership_data['user_id'],
+            team_id=membership_data['team_id'],
+            role=membership_data['role']
+        )
+        return membership
+
+    @staticmethod
+    def create(user_id, team_id, role):
+        membership_res = pyr_db.child('memberships').push({
+            "user_id": user_id,
+            "team_id": team_id,
+            "role": role
+        })
+        membership_id = membership_res['name'] # api sends id back as 'name'
+        print('Sucessfully created membership: {0}'.format(membership_id))
+
+        membership = Membership.get(membership_id)
+        return membership
+
+    def update(self, role):
+        pyr_db.child('memberships').child(self.id).update({
+            "role": role
+        })
+
+        self.role = role
+
 
 
 

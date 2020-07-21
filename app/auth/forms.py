@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField
 from wtforms.validators import DataRequired, Email, Length
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 
@@ -33,3 +33,11 @@ class UploadPhotoForm(FlaskForm):
 class TeamForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
     submit = SubmitField('SUBMIT')
+
+class InviteForm(FlaskForm):
+    email = StringField('Email address', validators=[DataRequired(), Email()])
+    
+    available_roles = ['READ', 'EDIT', 'ADMIN', 'OWNER']
+    role = SelectField('Role', choices=available_roles, validators=[DataRequired()])
+    
+    submit = SubmitField('INVITE')

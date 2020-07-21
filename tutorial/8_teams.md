@@ -388,6 +388,172 @@ def edit_team(team_id):
         team=team)
 ```
 
+Now we can create teams, we need to associate them with users and vice versa.
+
+So let's create the model for memberships in auth/models.py
+
+
+```
+class Membership():
+    def __init__(self, id_, user_id, team_id, role):
+        self.id = id_
+        self.user_id = user_id
+        self.team_id = team_id
+        self.role = role
+    
+    @staticmethod
+    def get(membership_id):
+        membership_data = pyr_db.child('memberships').child(membership_id).get().val()
+        membership = Membership(
+            id_=membership_id, 
+            user_id=membership_data['user_id'],
+            team_id=membership_data['team_id'],
+            role=membership_data['role']
+        )
+        return membership
+
+    @staticmethod
+    def create(user_id, team_id, role):
+        membership_res = pyr_db.child('memberships').push({
+            "user_id": user_id,
+            "team_id": team_id,
+            "role": role
+        })
+        membership_id = membership_res['name'] # api sends id back as 'name'
+        print('Sucessfully created membership: {0}'.format(membership_id))
+
+        membership = Membership.get(membership_id)
+        return membership
+
+    def update(self, role):
+        pyr_db.child('memberships').child(self.id).update({
+            "role": role
+        })
+
+        self.role = role
+```
+
+This is not too dissimilar from what we just did to create the teams model.
+
+Let's also add a form to invite users to a team.
+
+Make sure you import SelectField at the top.
+
+Then the form looks like this:
+
+```
+class InviteForm(FlaskForm):
+    email = StringField('Email address', validators=[DataRequired(), Email()])
+    
+    available_roles = ['READ', 'EDIT', 'ADMIN', 'OWNER']
+    role = SelectField('Role', choices=available_roles, validators=[DataRequired()])
+    
+    submit = SubmitField('INVITE')
+```
+
+We're providing an email because the user won't know the user id. So we need a method on user now to look up by email.
+
+```
+@staticmethod
+    def get_by_email(email):
+        try:
+            firebase_user = auth.get_user_by_email(email)
+
+            print('Successfully fetched user data: {0}'.format(firebase_user.uid))
+            flask_user = User(
+                uid=firebase_user.uid,
+                email=firebase_user.email,
+                name=firebase_user.display_name,
+                verified=firebase_user.email_verified,
+                created=firebase_user.user_metadata.creation_timestamp,
+                photo_url=firebase_user.photo_url
+            )
+            return flask_user
+            
+        except Exception as e:
+            print(e)
+            return None
+```
+
+Ok like before let's create a page where we can add memberships.
+
+```
+{% extends "main/base.html" %}
+
+{% block content %}
+<h3>Invite User</h3>
+<p>Add a new user to your team.</p>
+
+<div class="row">
+    <div class="col s12 m5">
+        <div class="card-panel">
+            <form action="" method="post">
+                {{ form.hidden_tag() }}
+                <p class="input-field">
+                    {{ form.email.label }}<br>
+                    {{ form.email(size=32, class_="validate") }}<br>
+                    {% for error in form.email.errors %}
+                    <span class="helper-text" data-error="[{{ error }}]" data-success=""></span>
+                    {% endfor %}
+                </p>
+                <p class="input-field">
+                    {{ form.role.label }}<br>
+                    {{ form.role(size=32, class_="validate") }}<br>
+                    {% for error in form.role.errors %}
+                    <span class="helper-text" data-error="[{{ error }}]" data-success=""></span>
+                    {% endfor %}
+                </p>
+                <p class="right-align">
+                    <button type="submit" name="btn" class="waves-effect waves-light btn blue">
+                    INVITE
+                    </button>
+                </p>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+```
+
+Now in routes, add InviteForm to the top of the page as well as the Membership model.
+
+
+Add this static method to the User model so we can invite users without logging them in.
+
+```
+@staticmethod
+def invite(email):
+    temp_pass = md5(email.lower().encode('utf-8')).hexdigest()
+
+    # invite and send password reset
+    pyr_user = pyr_auth.create_user_with_email_and_password(email, temp_pass)
+    pyr_auth.send_password_reset_email(email)
+
+    pyr_user_info = pyr_auth.get_account_info(pyr_user['idToken'])
+
+    flask_user = User(
+        uid=pyr_user['localId'],
+        email=pyr_user['email'],
+        name=pyr_user['displayName'],
+        verified=pyr_user_info['users'][0]['emailVerified'],
+        created=pyr_user_info['users'][0]['createdAt'],
+        photo_url=pyr_user_info['users'][0]['photoUrl']
+    )
+    return flask_user
+```
 
 
 
+So the process is:
+- visit all teams page for user
+- visit team page
+- click invite
+- enter email and role
+- look up user by email
+- if no user, create user with placeholder password
+- reset user password so they get an alert
+- create membership between user_id and team_id
+- load page for that team's users, with new user present
+
+
+We've built the ability to add memberships / invite users, but we haven't created the all teams page, or the users per team page.

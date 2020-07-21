@@ -1,9 +1,9 @@
 from flask import render_template, flash, redirect, url_for, session, escape
 from flask_login import current_user, login_required
-from app.auth.forms import SignInForm, SignUpForm, ResetPasswordForm, EditProfileForm, UploadPhotoForm, TeamForm
+from app.auth.forms import SignInForm, SignUpForm, ResetPasswordForm, EditProfileForm, UploadPhotoForm, TeamForm, InviteForm
 from app.auth import bp
 from app import login_manager
-from app.auth.models import User, Team
+from app.auth.models import User, Team, Membership
 
 import requests
 import json
@@ -240,3 +240,31 @@ def edit_team(team_id):
         
     return render_template('auth/edit_team.html', title='Edit Team', form=form, 
         team=team)
+
+@bp.route('/teams/<team_id>/add', methods=['GET', 'POST'])
+# @login_required
+def invite_user(team_id):
+    form = InviteForm()
+
+    if form.validate_on_submit():
+        email = form.email.data
+        role = form.role.data
+
+        #create a team
+        try:
+            user = User.get_by_email(email)
+
+            if not user:
+                user = User.invite(email)
+                
+            membership = Membership.create(user.id, team_id, role)
+
+            # Update successful
+            flash('User {} added to team {} with role {}'.format(membership.user_id, membership.team_id,  membership.role), 'teal')
+            return redirect(url_for('auth.view_team', team_id=team_id))
+
+        except Exception as e:
+            # Update unsuccessful
+            flash("Error: {}".format(e), 'red')
+        
+    return render_template('auth/invite_user.html', title='Invite User', form=form)

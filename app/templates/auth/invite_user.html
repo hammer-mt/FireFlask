@@ -1,0 +1,35 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+<h3>Invite User</h3>
+<p>Add a new user to your team.</p>
+
+<div class="row">
+    <div class="col s12 m5">
+        <div class="card-panel">
+            <form action="" method="post">
+                {{ form.hidden_tag() }}
+                <p class="input-field">
+                    {{ form.email.label }}<br>
+                    {{ form.email(size=32, class_="validate") }}<br>
+                    {% for error in form.email.errors %}
+                    <span class="helper-text" data-error="[{{ error }}]" data-success=""></span>
+                    {% endfor %}
+                </p>
+                <p class="input-field">
+                    {{ form.role.label }}<br>
+                    {{ form.role(size=32, class_="validate") }}<br>
+                    {% for error in form.role.errors %}
+                    <span class="helper-text" data-error="[{{ error }}]" data-success=""></span>
+                    {% endfor %}
+                </p>
+                <p class="right-align">
+                    <button type="submit" name="btn" class="waves-effect waves-light btn blue">
+                    INVITE
+                    </button>
+                </p>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
