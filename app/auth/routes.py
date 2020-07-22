@@ -222,6 +222,7 @@ def view_team(team_id):
             "id": user.id,
             "name": user.name,
             "role": membership_data['role'],
+            "membership_id": membership.key()
         }
         team_members.append(member)
 
@@ -323,3 +324,22 @@ def list_teams():
         teams_list.append(team)
 
     return render_template('auth/list_teams.html', title='Teams', teams_list=teams_list)
+
+@bp.route('/<membership_id>/delete', methods=['GET', 'POST'])
+@login_required
+def remove_user(membership_id):
+
+    membership = Membership.get(membership_id)
+
+    role = Membership.user_role(current_user.id, membership.team_id)
+    if role not in ["ADMIN", "OWNER"]:
+        abort(401, "You don't have access to remove this user.")
+    elif membership.role == "OWNER":
+        abort(401, "You cannot remove the owner of the account.")
+    else:
+        membership.remove()
+
+        flash('User {} removed from team {}'.format(membership.user_id, membership.team_id), 'teal')
+        return redirect(url_for('auth.view_team', team_id=membership.team_id))
+
+    

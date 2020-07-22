@@ -297,6 +297,10 @@ class Membership():
         
         return role
 
+    def remove(self):
+        pyr_db.child('memberships').child(self.id).remove()
+
+
 
 
     

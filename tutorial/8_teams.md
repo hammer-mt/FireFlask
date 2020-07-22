@@ -894,3 +894,63 @@ def create(user_id, team_id, role):
         return membership
 ```
 
+One more thing, let's make it possible for owners and admins to delete a membership, or remove a user from a team. We should also stop people deleting the owner so there's always one person on a team.
+
+Let's create the route first.
+
+```
+@bp.route('/<membership_id>/delete', methods=['GET', 'POST'])
+@login_required
+def remove_user(membership_id):
+
+    membership = Membership.get(membership_id)
+
+    role = Membership.user_role(current_user.id, membership.team_id)
+    if role not in ["ADMIN", "OWNER"]:
+        abort(401, "You don't have access to remove this user.")
+    elif membership.role == "OWNER":
+        abort(401, "You cannot remove the owner of the account.")
+    else:
+        membership.remove()
+
+        flash('User {} removed from team {}'.format(membership.user_id, membership.team_id), 'teal')
+        return redirect(url_for('auth.view_team', team_id=membership.team_id))
+    
+```
+
+This will check the person has the authority to remove. It will also check if the membership role is a OWNER.
+
+Then it will remove.
+
+Now we need to make that remove method in Membership model.
+
+```
+def remove(self):
+    pyr_db.child('memberships').child(self.id).remove()
+```
+
+Now in the view team we just need to add the remove option.
+
+```
+{% for member in team_members %}
+<div class="col s2">
+    <div class="card-panel">
+        <p>Name: {{ member.name }}</p>
+        <p>Role: {{ member.role }}</p>
+        {% if role in ['ADMIN', 'OWNER'] %}
+        <a href="{{ url_for('auth.remove_user', membership_id=member.membership_id) }}">
+            <button type="submit" name="btn" class="waves-effect waves-light btn red">
+                REMOVE
+            </button>
+        </a>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endfor %}
+```
+
+
+
+Ok so that's pretty much done! For cleanliness let's refactor so all of this is in a separate blueprint.

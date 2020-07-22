@@ -46,6 +46,13 @@
         <div class="card-panel">
             <p>Name: {{ member.name }}</p>
             <p>Role: {{ member.role }}</p>
+            {% if role in ['ADMIN', 'OWNER'] %}
+            <a href="{{ url_for('auth.remove_user', membership_id=member.membership_id) }}">
+                <button type="submit" name="btn" class="waves-effect waves-light btn red">
+                    REMOVE
+                </button>
+            </a>
+            {% endif %}
         </div>
 
     </div>
@@ -56,7 +63,7 @@
 <div class="row">
     <div class="col s2">
         <a href="{{ url_for('auth.invite_user', team_id=team.id) }}">
-            <button type="submit" name="btn" class="waves-effect waves-light btn red">
+            <button type="submit" name="btn" class="waves-effect waves-light btn orange">
                 INVITE
             </button>
         </a>
