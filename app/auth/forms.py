@@ -37,7 +37,7 @@ class TeamForm(FlaskForm):
 class InviteForm(FlaskForm):
     email = StringField('Email address', validators=[DataRequired(), Email()])
     
-    available_roles = ['READ', 'EDIT', 'ADMIN', 'OWNER']
+    available_roles = ['READ', 'EDIT', 'ADMIN']
     role_choices = [(role, role) for role in available_roles] # format required by flask wtf
 
     role = SelectField('Role', choices=role_choices, default='READ', validators=[DataRequired()])

@@ -608,4 +608,289 @@ So the process is:
 
 We've built the ability to add memberships / invite users, but we haven't created the all teams page, or the users per team page.
 
+First let's update the memberships model. This part is pretty straightforward.
+
+```
+@staticmethod
+def get_users_by_team(team_id):
+    users_by_team = pyr_db.child("memberships").order_by_child("team_id").equal_to(team_id).get()
+
+    return users_by_team
+
+@staticmethod
+def get_teams_by_user(user_id):
+    teams_by_user = pyr_db.child("memberships").order_by_child("user_id").equal_to(user_id).get()
+
+    return teams_by_user
+```
+
+Now let's update the route for viewing a team, to see all the users on that team.
+
+```
+@bp.route('/teams/<team_id>', methods=['GET'])
+@login_required
+def view_team(team_id):
+    team = Team.get(team_id)
+    users_by_team = Membership.get_users_by_team(team_id)
+    team_members = []
+    for membership in users_by_team:
+        membership_data = membership.val()
+        user = User.get(membership_data['user_id'])
+
+        member = {
+            "name": user.name,
+            "role": membership_data['role'],
+        }
+        team_members.append(member)
+
+    title = 'View Team {}'.format(team.name)
+        
+    return render_template('auth/view_team.html', title=title, team=team, team_members=team_members)
+```
+
 P.S. one great trick to stop having to log in all the time, is to just comment out @login_required while you're working on it.
+
+So for example with getting all teams you would do the following:
+```
+@bp.route('/teams', methods=['GET'])
+# @login_required
+def list_teams():
+    teams_by_user = Membership.get_teams_by_user(current_user.id)
+
+    teams_list = []
+    for membership in teams_by_user:
+        membership_data = membership.val()
+        team_data = Team.get(membership_data['team_id'])
+
+        team = {
+            "id": team_data.id,
+            "name": team_data.name,
+            "role": membership_data['role'],
+        }
+        teams_list.append(team)
+
+    return render_template('auth/list_teams.html', title='Teams', teams_list=teams_list)
+```
+
+Test it out and then uncomment the login_required.
+
+Now let's update the template for teams.
+
+```
+<div class="row">
+    <div class="col s4">
+        <h5>Team members</h5>
+    </div>
+</div>
+<div class="row">
+    
+    {% for member in team_members %}
+    <div class="col s2">
+        <div class="card-panel">
+            <p>Name: {{ member.name }}</p>
+            <p>Role: {{ member.role }}</p>
+        </div>
+
+    </div>
+    
+    {% endfor %}
+</div>
+<div class="row">
+    <div class="col s2">
+        <a href="{{ url_for('auth.invite_user', team_id=team.id) }}">
+            <button type="submit" name="btn" class="waves-effect waves-light btn red">
+                INVITE
+            </button>
+        </a>
+    </div>
+</div>
+```
+
+This goes underneath the card panel.
+
+Also we should add the template for all teams listing.
+
+```
+{% extends "main/base.html" %}
+
+{% block content %}
+<h3>Teams</h3>
+<p>A list of all of the teams you have access to.</p>
+
+<div class="row">
+    <a href="{{ url_for('auth.add_team') }}">
+        <button type="submit" name="btn" class="waves-effect waves-light btn red">
+            ADD
+        </button>
+    </a>
+
+</div>
+
+
+<div class="row">
+    
+    {% for team in teams_list %}
+    <div class="col s2">
+        <a href="{{ url_for('auth.view_team', team_id=team.id) }}">
+            <div class="card">
+                <div class="card-content center-align">
+                    <span class="card-title">{{ team.name }}</span>
+                </div>
+                <div class="card-action">
+                    <div class="right-align">{{ team.role }}</div>
+                </div>
+            </div>
+        </a>
+
+    </div>
+    
+    {% endfor %}
+</div>
+
+
+{% endblock %}
+
+```
+
+Then add a link in the nav bar.
+`<li id="auth-list_teams"><a href="{{ url_for('auth.list_teams') }}">Teams</a></li>`
+
+Once you do this and test it out, you'll run into an indexing issue. To solve that just change your rules to this in the firebase realtime database.
+
+```
+{
+  /* Visit https://firebase.google.com/docs/database/security to learn more about security rules. */
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "memberships": {
+      ".indexOn": ["team_id", "user_id"]
+    }
+  }
+}
+```
+
+Memberships should be working now! But any user can invite any other user, the roles and memberships don't do anything to stop them.
+
+First let's add a user as the owner when they create a team, and remove that option from the dropdown in the invite form (we'll add the ability to change owners when we build an admin panel)
+
+`Membership.create(current_user.id, team.id, "OWNER")`
+
+This goes in the add_team route.
+
+Ok so let's now remove the ability to see a team if the user isn't in that team.
+
+In view team it's straightforward to check because we already have a list of team members. So we just do this.
+
+Initialize 'authorized' as false
+`authorized = False`
+
+Then add this in the loop
+```
+if current_user.id == user.id:
+    authorized = True
+```
+
+Then put in an abort
+```
+if not authorized:
+    abort(401, "You don't have access to that team")
+```
+
+Let's also add in a role, param, so it ends up like this:
+```
+@bp.route('/teams/<team_id>', methods=['GET'])
+@login_required
+def view_team(team_id):
+    team = Team.get(team_id)
+    users_by_team = Membership.get_users_by_team(team_id)
+
+    team_members = []
+    authorized = False
+    role = False
+    for membership in users_by_team:
+        membership_data = membership.val()
+        user = User.get(membership_data['user_id'])
+
+        member = {
+            "id": user.id,
+            "name": user.name,
+            "role": membership_data['role'],
+        }
+        team_members.append(member)
+
+        if current_user.id == user.id:
+            authorized = True
+            role = membership_data['role']
+
+    if not authorized:
+        abort(401, "You don't have access to that team")
+
+    title = 'View Team {}'.format(team.name)
+        
+    return render_template('auth/view_team.html', title=title, team=team, team_members=team_members, role=role)
+```
+
+Remember to remove the edit button if they aren't the right role.
+
+```
+{% if role in ['ADMIN', 'OWNER'] %}
+<p>
+    <a href="{{ url_for('auth.edit_team', team_id=team.id) }}">
+        <button type="submit" name="btn" class="waves-effect waves-light btn blue">
+            EDIT
+        </button>
+    </a>
+</p>
+{% endif %}
+```
+
+However we will probably want to check the user's role and authorized status in a bunch of places in future, so let's make a function for that as part of memberships.
+
+```
+@staticmethod
+def user_role(user_id, team_id):
+    users_by_team = pyr_db.child("memberships").order_by_child("team_id").equal_to(team_id).get()
+
+    role = None
+    for membership in users_by_team:
+        membership_data = membership.val()
+
+        if membership_data['user_id'] == user_id:
+            role = membership_data.role
+    
+    return role
+```
+
+Let's use this in the team edit route.
+
+```
+role = Membership.user_role(current_user.id, team_id)
+if role not in ["ADMIN", "OWNER"]:
+    abort(401, "You don't have access to edit this team.")
+```
+
+Do this for invite too.
+
+We should also put some protection in now to stop people adding the same user twice to the same team.
+
+```
+@staticmethod
+def create(user_id, team_id, role):
+    existing_role = Membership.user_role(user_id, team_id)
+
+    if existing_role:
+        raise Exception("User already has access")
+    else:
+        membership_res = pyr_db.child('memberships').push({
+            "user_id": user_id,
+            "team_id": team_id,
+            "role": role
+        })
+        membership_id = membership_res['name'] # api sends id back as 'name'
+        print('Sucessfully created membership: {0}'.format(membership_id))
+
+        membership = Membership.get(membership_id)
+        return membership
+```
+

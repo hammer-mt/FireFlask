@@ -13,3 +13,7 @@ main {
 strong {
     font-weight:bold !important;
 }
+.team {
+    height: 7em;
+    overflow: hidden;
+}

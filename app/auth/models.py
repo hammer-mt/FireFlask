@@ -249,16 +249,21 @@ class Membership():
 
     @staticmethod
     def create(user_id, team_id, role):
-        membership_res = pyr_db.child('memberships').push({
-            "user_id": user_id,
-            "team_id": team_id,
-            "role": role
-        })
-        membership_id = membership_res['name'] # api sends id back as 'name'
-        print('Sucessfully created membership: {0}'.format(membership_id))
+        existing_role = Membership.user_role(user_id, team_id)
 
-        membership = Membership.get(membership_id)
-        return membership
+        if existing_role:
+            raise Exception("User already has access")
+        else:
+            membership_res = pyr_db.child('memberships').push({
+                "user_id": user_id,
+                "team_id": team_id,
+                "role": role
+            })
+            membership_id = membership_res['name'] # api sends id back as 'name'
+            print('Sucessfully created membership: {0}'.format(membership_id))
+
+            membership = Membership.get(membership_id)
+            return membership
 
     def update(self, role):
         pyr_db.child('memberships').child(self.id).update({
@@ -278,6 +283,23 @@ class Membership():
         teams_by_user = pyr_db.child("memberships").order_by_child("user_id").equal_to(user_id).get()
 
         return teams_by_user
+
+    @staticmethod
+    def user_role(user_id, team_id):
+        users_by_team = pyr_db.child("memberships").order_by_child("team_id").equal_to(team_id).get()
+
+        role = None
+        for membership in users_by_team:
+            membership_data = membership.val()
+
+            if membership_data['user_id'] == user_id:
+                role = membership_data['role']
+        
+        return role
+
+
+
+    
 
 
 

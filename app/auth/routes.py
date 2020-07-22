@@ -1,4 +1,4 @@
-from flask import render_template, flash, redirect, url_for, session, escape
+from flask import render_template, flash, redirect, url_for, session, escape, abort
 from flask_login import current_user, login_required
 from app.auth.forms import SignInForm, SignUpForm, ResetPasswordForm, EditProfileForm, UploadPhotoForm, TeamForm, InviteForm
 from app.auth import bp
@@ -192,6 +192,8 @@ def add_team():
         try:
             team = Team.create(name)
 
+            Membership.create(current_user.id, team.id, "OWNER")
+
             # Update successful
             flash('Team id={}, created with name={}'.format(team.id, team.name), 'teal')
             return redirect(url_for('auth.view_team', team_id=team.id))
@@ -208,25 +210,41 @@ def add_team():
 def view_team(team_id):
     team = Team.get(team_id)
     users_by_team = Membership.get_users_by_team(team_id)
+
     team_members = []
+    authorized = False
+    role = False
     for membership in users_by_team:
         membership_data = membership.val()
         user = User.get(membership_data['user_id'])
 
         member = {
+            "id": user.id,
             "name": user.name,
             "role": membership_data['role'],
         }
         team_members.append(member)
 
+        if current_user.id == user.id:
+            authorized = True
+            role = membership_data['role']
+
+    if not authorized:
+        abort(401, "You don't have access to that team")
+
     title = 'View Team {}'.format(team.name)
         
-    return render_template('auth/view_team.html', title=title, team=team, team_members=team_members)
+    return render_template('auth/view_team.html', title=title, team=team, team_members=team_members, role=role)
 
 
 @bp.route('/teams/<team_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_team(team_id):
+
+    role = Membership.user_role(current_user.id, team_id)
+    if role not in ["ADMIN", "OWNER"]:
+        abort(401, "You don't have access to edit this team.")
+
     form = TeamForm()
 
     team = Team.get(team_id)
@@ -256,6 +274,10 @@ def edit_team(team_id):
 @bp.route('/teams/<team_id>/invite', methods=['GET', 'POST'])
 @login_required
 def invite_user(team_id):
+    role = Membership.user_role(current_user.id, team_id)
+    if role not in ["ADMIN", "OWNER"]:
+        abort(401, "You don't have access to invite to this team.")
+
     form = InviteForm()
 
     team = Team.get(team_id)
@@ -286,5 +308,18 @@ def invite_user(team_id):
 @bp.route('/teams', methods=['GET'])
 @login_required
 def list_teams():
-    teams_list = Membership.get_teams_by_user(current_user.id)
+    teams_by_user = Membership.get_teams_by_user(current_user.id)
+
+    teams_list = []
+    for membership in teams_by_user:
+        membership_data = membership.val()
+        team_data = Team.get(membership_data['team_id'])
+
+        team = {
+            "id": team_data.id,
+            "name": team_data.name,
+            "role": membership_data['role'],
+        }
+        teams_list.append(team)
+
     return render_template('auth/list_teams.html', title='Teams', teams_list=teams_list)
