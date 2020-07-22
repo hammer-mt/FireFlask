@@ -3,7 +3,7 @@
 {% block content %}
 <h3>Team {{ team.name }}</h3>
 <p>Your team profile information.</p>
-<a href="{{ url_for('auth.list_teams') }}">< Back to Teams</a>
+<a href="{{ url_for('teams.list_teams') }}">< Back to Teams</a>
 
 <div class="row">
     <div class="col s12 m8 l7">
@@ -22,7 +22,7 @@
             </table>
             {% if role in ['ADMIN', 'OWNER'] %}
             <p>
-                <a href="{{ url_for('auth.edit_team', team_id=team.id) }}">
+                <a href="{{ url_for('teams.edit_team', team_id=team.id) }}">
                     <button type="submit" name="btn" class="waves-effect waves-light btn blue">
                         EDIT
                     </button>
@@ -47,7 +47,7 @@
             <p>Name: {{ member.name }}</p>
             <p>Role: {{ member.role }}</p>
             {% if role in ['ADMIN', 'OWNER'] %}
-            <a href="{{ url_for('auth.remove_user', membership_id=member.membership_id) }}">
+            <a href="{{ url_for('teams.remove_user', membership_id=member.membership_id) }}">
                 <button type="submit" name="btn" class="waves-effect waves-light btn red">
                     REMOVE
                 </button>
@@ -62,7 +62,7 @@
 {% if role in ['ADMIN', 'OWNER'] %}
 <div class="row">
     <div class="col s2">
-        <a href="{{ url_for('auth.invite_user', team_id=team.id) }}">
+        <a href="{{ url_for('teams.invite_user', team_id=team.id) }}">
             <button type="submit" name="btn" class="waves-effect waves-light btn orange">
                 INVITE
             </button>

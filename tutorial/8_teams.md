@@ -951,6 +951,364 @@ Now in the view team we just need to add the remove option.
 {% endfor %}
 ```
 
-
-
 Ok so that's pretty much done! For cleanliness let's refactor so all of this is in a separate blueprint.
+
+Create a folder in templates called teams, and the same again in the app folder.
+
+Move all the templates related to teams across to the new teams folder.
+
+Now in the app/teams folder add an __init__.py file with these contents
+```
+from flask import Blueprint
+
+bp = Blueprint('teams', __name__)
+
+from app.teams import routes
+```
+
+You also want to move the routes related to teams into this folder, in a new routes.py file.
+
+```
+from flask import render_template, flash, redirect, url_for, session, escape, abort
+from flask_login import current_user, login_required
+from app.teams.forms import TeamForm, InviteForm
+from app.teams import bp
+from app import login_manager
+from app.auth.models import User, Team, Membership
+
+import requests
+import json
+from datetime import datetime
+
+@bp.route('/add_team', methods=['GET', 'POST'])
+@login_required
+def add_team():
+    form = TeamForm()
+
+    if form.validate_on_submit():
+        name = form.name.data
+
+        #create a team
+        try:
+            team = Team.create(name)
+
+            Membership.create(current_user.id, team.id, "OWNER")
+
+            # Update successful
+            flash('Team id={}, created with name={}'.format(team.id, team.name), 'teal')
+            return redirect(url_for('auth.view_team', team_id=team.id))
+
+        except Exception as e:
+            # Update unsuccessful
+            flash("Error: {}".format(e), 'red')
+        
+    return render_template('auth/add_team.html', title='Add Team', form=form)
+
+
+@bp.route('/teams/<team_id>', methods=['GET'])
+@login_required
+def view_team(team_id):
+    team = Team.get(team_id)
+    users_by_team = Membership.get_users_by_team(team_id)
+
+    team_members = []
+    authorized = False
+    role = False
+    for membership in users_by_team:
+        membership_data = membership.val()
+        user = User.get(membership_data['user_id'])
+
+        member = {
+            "id": user.id,
+            "name": user.name,
+            "role": membership_data['role'],
+            "membership_id": membership.key()
+        }
+        team_members.append(member)
+
+        if current_user.id == user.id:
+            authorized = True
+            role = membership_data['role']
+
+    if not authorized:
+        abort(401, "You don't have access to that team")
+
+    title = 'View Team {}'.format(team.name)
+        
+    return render_template('auth/view_team.html', title=title, team=team, team_members=team_members, role=role)
+
+
+@bp.route('/teams/<team_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_team(team_id):
+
+    role = Membership.user_role(current_user.id, team_id)
+    if role not in ["ADMIN", "OWNER"]:
+        abort(401, "You don't have access to edit this team.")
+
+    form = TeamForm()
+
+    team = Team.get(team_id)
+
+    if form.validate_on_submit():
+        name = form.name.data
+
+        #edit a team
+        try:
+            team.update(name)
+
+            # Update successful
+            flash('Team {}, updated with name={}'.format(
+                 team.id, team.name), 'teal')
+
+            return redirect(url_for('auth.view_team', team_id=team.id))
+
+        except Exception as e:
+            # Update unsuccessful
+            flash("Error: {}".format(e), 'red')
+
+    form.name.data = team.name
+        
+    return render_template('auth/edit_team.html', title='Edit Team', form=form, 
+        team=team)
+
+@bp.route('/teams/<team_id>/invite', methods=['GET', 'POST'])
+@login_required
+def invite_user(team_id):
+    role = Membership.user_role(current_user.id, team_id)
+    if role not in ["ADMIN", "OWNER"]:
+        abort(401, "You don't have access to invite to this team.")
+
+    form = InviteForm()
+
+    team = Team.get(team_id)
+
+    if form.validate_on_submit():
+        email = form.email.data
+        role = form.role.data
+
+        #create a team
+        try:
+            user = User.get_by_email(email)
+
+            if not user:
+                user = User.invite(email)
+                
+            membership = Membership.create(user.id, team_id, role)
+
+            # Update successful
+            flash('User {} added to team {} with role {}'.format(membership.user_id, membership.team_id,  membership.role), 'teal')
+            return redirect(url_for('auth.view_team', team_id=team.id))
+
+        except Exception as e:
+            # Update unsuccessful
+            flash("Error: {}".format(e), 'red')
+        
+    return render_template('auth/invite_user.html', title='Invite User', form=form, team=team)
+
+@bp.route('/teams', methods=['GET'])
+@login_required
+def list_teams():
+    teams_by_user = Membership.get_teams_by_user(current_user.id)
+
+    teams_list = []
+    for membership in teams_by_user:
+        membership_data = membership.val()
+        team_data = Team.get(membership_data['team_id'])
+
+        team = {
+            "id": team_data.id,
+            "name": team_data.name,
+            "role": membership_data['role'],
+        }
+        teams_list.append(team)
+
+    return render_template('auth/list_teams.html', title='Teams', teams_list=teams_list)
+
+@bp.route('/<membership_id>/delete', methods=['GET', 'POST'])
+@login_required
+def remove_user(membership_id):
+
+    membership = Membership.get(membership_id)
+
+    role = Membership.user_role(current_user.id, membership.team_id)
+    if role not in ["ADMIN", "OWNER"]:
+        abort(401, "You don't have access to remove this user.")
+    elif membership.role == "OWNER":
+        abort(401, "You cannot remove the owner of the account.")
+    else:
+        membership.remove()
+
+        flash('User {} removed from team {}'.format(membership.user_id, membership.team_id), 'teal')
+        return redirect(url_for('auth.view_team', team_id=membership.team_id))
+```
+
+Make sure you add your teams forms.py.
+
+```
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField, SelectField
+from wtforms.validators import DataRequired, Email, Length
+
+class TeamForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    submit = SubmitField('SUBMIT')
+
+class InviteForm(FlaskForm):
+    email = StringField('Email address', validators=[DataRequired(), Email()])
+    
+    available_roles = ['READ', 'EDIT', 'ADMIN']
+    role_choices = [(role, role) for role in available_roles] # format required by flask wtf
+
+    role = SelectField('Role', choices=role_choices, default='READ', validators=[DataRequired()])
+    
+    submit = SubmitField('INVITE')
+```
+
+Now move across the models for memberships and teams.
+
+```
+from app import pyr_auth, pyr_db
+from firebase_admin import auth
+
+            
+class Team():
+    def __init__(self, id_, name):
+        self.id = id_
+        self.name = name
+    
+    @staticmethod
+    def get(team_id):
+        team_data = pyr_db.child('teams').child(team_id).get().val()
+        team = Team(
+            id_=team_id, 
+            name=team_data['name']
+        )
+        return team
+
+    @staticmethod
+    def create(name):
+        team_res = pyr_db.child('teams').push({
+            "name": name
+        })
+        team_id = team_res['name'] # api sends id back as 'name'
+        print('Sucessfully created new team: {0}'.format(team_id))
+
+        team = Team.get(team_id)
+        return team
+
+    def update(self, name):
+        pyr_db.child('teams').child(self.id).update({
+            "name": name
+        })
+
+        self.name = name
+
+
+class Membership():
+    def __init__(self, id_, user_id, team_id, role):
+        self.id = id_
+        self.user_id = user_id
+        self.team_id = team_id
+        self.role = role
+    
+    @staticmethod
+    def get(membership_id):
+        membership_data = pyr_db.child('memberships').child(membership_id).get().val()
+        membership = Membership(
+            id_=membership_id, 
+            user_id=membership_data['user_id'],
+            team_id=membership_data['team_id'],
+            role=membership_data['role']
+        )
+        return membership
+
+    @staticmethod
+    def create(user_id, team_id, role):
+        existing_role = Membership.user_role(user_id, team_id)
+
+        if existing_role:
+            raise Exception("User already has access")
+        else:
+            membership_res = pyr_db.child('memberships').push({
+                "user_id": user_id,
+                "team_id": team_id,
+                "role": role
+            })
+            membership_id = membership_res['name'] # api sends id back as 'name'
+            print('Sucessfully created membership: {0}'.format(membership_id))
+
+            membership = Membership.get(membership_id)
+            return membership
+
+    def update(self, role):
+        pyr_db.child('memberships').child(self.id).update({
+            "role": role
+        })
+
+        self.role = role
+
+    @staticmethod
+    def get_users_by_team(team_id):
+        users_by_team = pyr_db.child("memberships").order_by_child("team_id").equal_to(team_id).get()
+
+        return users_by_team
+
+    @staticmethod
+    def get_teams_by_user(user_id):
+        teams_by_user = pyr_db.child("memberships").order_by_child("user_id").equal_to(user_id).get()
+
+        return teams_by_user
+
+    @staticmethod
+    def user_role(user_id, team_id):
+        users_by_team = pyr_db.child("memberships").order_by_child("team_id").equal_to(team_id).get()
+
+        role = None
+        for membership in users_by_team:
+            membership_data = membership.val()
+
+            if membership_data['user_id'] == user_id:
+                role = membership_data['role']
+        
+        return role
+
+    def remove(self):
+        pyr_db.child('memberships').child(self.id).remove()
+
+```
+
+Now add this to the create app function in app/__init__.py
+
+```
+from app.teams import bp as teams_bp
+app.register_blueprint(teams_bp, url_prefix='/teams')
+```
+
+Last thing to do is to make sure all our routes are updated, including in templates.
+
+First remove any /teams/ in the routes.
+
+`/teams/<team_id>/edit` becomes `/<team_id>/edit`
+
+In team routes change the imports to reflect the new location.
+
+```
+from app.auth.models import User, Team, Membership
+from app.teams.models import Team, Membership
+```
+Change url_fors to the right path
+`redirect(url_for('auth.view_team', team_id=team.id))`
+becomes 
+`redirect(url_for('teams.view_team', team_id=team.id))`
+
+and
+`return render_template('auth/add_team.html', title='Add Team', form=form)`
+turns into
+`return render_template('teams/add_team.html', title='Add Team', form=form)`
+
+Remember to check all the templates too! There's one in base.html, then each of the team templates have them.
+
+If you've done it right, everything should work like normal!
+
+

@@ -5,7 +5,7 @@
 <p>A list of all of the teams you have access to.</p>
 
 <div class="row">
-    <a href="{{ url_for('auth.add_team') }}">
+    <a href="{{ url_for('teams.add_team') }}">
         <button type="submit" name="btn" class="waves-effect waves-light btn red">
             ADD
         </button>
@@ -18,7 +18,7 @@
     
     {% for team in teams_list %}
     <div class="col s2">
-        <a href="{{ url_for('auth.view_team', team_id=team.id) }}">
+        <a href="{{ url_for('teams.view_team', team_id=team.id) }}">
             <div class="card">
                 <div class="card-content center-align team">
                     <span class="card-title">{{ team.name }}</span>
