@@ -297,6 +297,13 @@ You should never store anything in github that is a password or other type of se
 Obviously this cloud function doesn't do much - the idea was to show you how to use a cloud function to pull data. You could update the cloud function to pull from an actual API platform, which we'll cover later.
 
 Now save your updates to git and merge branch.
+`git add .`
+`git commit -m "displayed cloud function data"`
+`git push`
+`git checkout master`
+`git merge functions`
+`git push`
+
 
 
 
