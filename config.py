@@ -14,3 +14,5 @@ class Config(object):
         "measurementId": "G-H6VEF5PZJP",
         "serviceAccount": "app/firebase-private-key.json"
     }
+
+    ACCESS_TOKEN = os.environ.get('ACCESS_TOKEN')

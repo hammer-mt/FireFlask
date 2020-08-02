@@ -6,3 +6,4 @@
 - [Run functions locally](https://firebase.google.com/docs/functions/local-emulator)
 - [Set up the Firebase Emulators](https://firebase.google.com/docs/rules/emulator-setup)
 - [The Flask Mega-Tutorial](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world)
+- [How to Develop, Debug and Test your Python Google Cloud Functions on Your Local Development Environment](https://medium.com/ci-t/how-to-develop-debug-and-test-your-python-google-cloud-functions-on-your-local-dev-environment-d56ef94cb409)
