@@ -143,3 +143,9 @@ firebase-private-key.json
 
 # Other
 .python-version
+
+# Env variables yaml
+env.yaml
+
+# Cloud function env
+*venv/
