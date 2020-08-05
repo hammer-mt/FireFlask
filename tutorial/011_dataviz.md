@@ -159,3 +159,232 @@ It can help to show the chart cards a bit closer to the table, so add this to th
     margin-bottom: 0em;
 }
 ```
+
+Let's save our progress now.
+
+`git status`
+`git add .`
+`git commit -m "demonstrated chart`
+`git push`
+
+Now we want to refactor this so each chart is called seperately. So let's move this logic over to a separate 'charts' blueprint.
+
+Create a folder in app called 'charts' and add an __init__.py file that has these contents.
+```
+from flask import Blueprint
+
+bp = Blueprint('charts', __name__)
+
+from app.charts import routes
+```
+
+Also add a routes.py file and a folder in templates called charts as well.
+
+We should also add this to the app's init file.
+```
+from app.charts import bp as charts_bp
+app.register_blueprint(charts_bp, url_prefix='/charts')
+```
+
+Now let's take the logic out of index. Replace the code in the index.html template with this
+```
+<div class="row">
+    <div class="col s6 m3">
+        <a href="{{ url_for('charts.dashboard') }}">
+            <div class="card-panel">
+                Go to dashboard
+            </div>
+        </a>    
+    </div>
+</div>
+```
+
+Then create a file called 'dashboard.html' in templates/charts that looks like this:
+```
+{% extends "main/base.html" %}
+
+{% block content %}
+
+    <h2>Dashboard</h2>
+
+    <!-- Chart JS Bar Chart -->
+    <div class="row">
+        <div class="col s12 m6 l6">
+            <div class="card-panel">
+                <canvas id="barChart" width="200" height="100"></canvas>
+            </div>
+        </div>
+
+    <!-- Chart JS line chart -->
+   
+        <div class="col s12 m6 l6">
+            <div class="card-panel">
+                <canvas id="lineChart" width="200" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    var data = [{% for item in values %}
+                    "{{item}}",
+                {% endfor %}];
+    var labels = [{% for item in text %}
+                    "{{item}}",
+                {% endfor %}];
+
+
+    var ctx = document.getElementById('lineChart').getContext('2d');
+    var lineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Spend',
+                data: data,
+                fill: true,
+                lineTension: 0.1,
+                backgroundColor: "rgba(75,192,192,0.4)",
+                borderColor: "rgba(75,192,192,1)",
+                borderCapStyle: 'butt',
+                borderDash: [],
+                borderDashOffset: 0.0,
+                borderJoinStyle: 'miter',
+                pointBorderColor: "rgba(75,192,192,1)",
+                pointBackgroundColor: "#fff",
+                pointBorderWidth: 1,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: "rgba(75,192,192,1)",
+                pointHoverBorderColor: "rgba(220,220,220,1)",
+                pointHoverBorderWidth: 2,
+                pointRadius: 1,
+                pointHitRadius: 10,
+                spanGaps: false
+            }]
+        },
+        options: {
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true
+                    }
+                }]
+            }
+        }
+    });
+    
+    var ctx2 = document.getElementById('barChart').getContext('2d');
+    var barChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Spend',
+                data: data,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(255, 99, 132, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true
+                    }
+                }]
+            }
+        }
+    });
+    </script>
+
+    <!-- Cloud function data -->
+    <div class="row">
+        <div class="col s12 m8">
+            <div class="card-panel">
+                <table class="striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Spend</th>
+                            <th>Clicks</th>
+                            <th>Impressions</th>
+                            <th>Conversions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    {% for row in data %}
+
+                        <tr>
+                            <td>{{ row['date'] }}</td>
+                            <td>{{ "${:,.2f}".format(row['spend']|float) }}</td>
+                            <td>{{ "{:,}".format(row['impressions']|int) }}</td>
+                            <td>{{ "{:,}".format(row['clicks']|int) }}</td>
+                            <td>{{ "{:,}".format(row['conversions']|int) }}</td>
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+```
+
+Note that we refactored this a little so it declares the data and labels in a javascript variable before loading.
+
+We also changed the name of the labels part we send to the page to text, so let's make sure we change that in our routes as well.
+
+We can strip out the whole cloud function logic from index and move it to the new routes.
+
+```
+from flask import render_template
+from app.charts import bp
+import json
+import requests
+from config import Config
+
+@bp.route('/', methods=['GET'])
+def dashboard():
+    # Run the cloud function
+    url = "https://us-central1-fireflask-ef97c.cloudfunctions.net/get_test_data"
+    payload = {"access_token": Config.ACCESS_TOKEN}
+    response = requests.get(url, params=payload)
+    data_json = json.loads(response.text)
+
+    text = [row['date'] for row in data_json]
+    values = [row['spend'] for row in data_json]
+
+    return render_template('charts/dashboard.html', title='Dashboard', data=data_json, text=text, values=values)
+```
+
+Note we aren't adding login_required yet, so it's easier to test.
+
+Now lets test it out.
+`flask run`
+
+That's all working, so now we need to add more types of visualization. 
+
+
+
+Our users will expect to see the ability to choose date range and client / team, so we need to make it more dynamic. This will mean changes to our cloud function to support this.
+

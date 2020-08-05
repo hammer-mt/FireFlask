@@ -7,149 +7,17 @@
             
     <h1>Hi, {{ current_user.name }}!</h1>
 
-    <!-- Chart JS Bar Chart -->
     <div class="row">
-        <div class="col s12 m6 l6">
-            <div class="card-panel">
-                <canvas id="barChart" width="200" height="100"></canvas>
-            </div>
-        </div>
-
-    <script>
-    var ctx = document.getElementById('barChart').getContext('2d');
-    var barChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: [{% for item in labels %}
-                        "{{item}}",
-                    {% endfor %}],
-            datasets: [{
-                label: 'Spend',
-                data:   [{% for item in values %}
-                            "{{item}}",
-                        {% endfor %}],
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(255, 99, 132, 0.2)'
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(255, 99, 132, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true
-                    }
-                }]
-            }
-        }
-    });
-    </script>
-
-    <!-- Chart JS line chart -->
-   
-        <div class="col s12 m6 l6">
-            <div class="card-panel">
-                <canvas id="lineChart" width="200" height="100"></canvas>
-            </div>
+        <div class="col s6 m3">
+            <a href="{{ url_for('charts.dashboard') }}">
+                <div class="card-panel">
+                    Go to dashboard
+                </div>
+            </a>    
         </div>
     </div>
 
-    <script>
-    var ctx = document.getElementById('lineChart').getContext('2d');
-    var lineChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [{% for item in labels %}
-                        "{{item}}",
-                    {% endfor %}],
-            datasets: [{
-                label: 'Spend',
-                data:   [{% for item in values %}
-                            "{{item}}",
-                        {% endfor %}],
-                fill: true,
-                lineTension: 0.1,
-                backgroundColor: "rgba(75,192,192,0.4)",
-                borderColor: "rgba(75,192,192,1)",
-                borderCapStyle: 'butt',
-                borderDash: [],
-                borderDashOffset: 0.0,
-                borderJoinStyle: 'miter',
-                pointBorderColor: "rgba(75,192,192,1)",
-                pointBackgroundColor: "#fff",
-                pointBorderWidth: 1,
-                pointHoverRadius: 5,
-                pointHoverBackgroundColor: "rgba(75,192,192,1)",
-                pointHoverBorderColor: "rgba(220,220,220,1)",
-                pointHoverBorderWidth: 2,
-                pointRadius: 1,
-                pointHitRadius: 10,
-                spanGaps: false
-            }]
-        },
-        options: {
-            scales: {
-                yAxes: [{
-                    ticks: {
-                        beginAtZero: true
-                    }
-                }]
-            }
-        }
-    });
-    </script>
-
-    <!-- Cloud function data -->
-    {% if data %}
-    <div class="row">
-        <div class="col s12 m8">
-            <div class="card-panel">
-                <table class="striped">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Spend</th>
-                            <th>Clicks</th>
-                            <th>Impressions</th>
-                            <th>Conversions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-
-                    {% for row in data %}
-
-                        <tr>
-                            <td>{{ row['date'] }}</td>
-                            <td>{{ "${:,.2f}".format(row['spend']|float) }}</td>
-                            <td>{{ "{:,}".format(row['impressions']|int) }}</td>
-                            <td>{{ "{:,}".format(row['clicks']|int) }}</td>
-                            <td>{{ "{:,}".format(row['conversions']|int) }}</td>
-                        </tr>
-
-                    {% endfor %}
-
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
+    
 
     <!-- Unauthenticated users -->
     {% else %}
