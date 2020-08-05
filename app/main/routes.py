@@ -18,7 +18,10 @@ def index():
         response = requests.get(url, params=payload)
         data_json = json.loads(response.text)
 
-        return render_template('main/index.html', title='Home', data=data_json)
+        labels = [row['date'] for row in data_json]
+        values = [row['spend'] for row in data_json]
+
+        return render_template('main/index.html', title='Home', data=data_json, labels=labels, values=values)
 
 
     return render_template('main/index.html', title='Home')

@@ -17,3 +17,6 @@ strong {
     height: 7em;
     overflow: hidden;
 }
+.row {
+    margin-bottom: 0em;
+}
