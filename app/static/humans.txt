@@ -1,0 +1,25 @@
+# The humans responsible & technology colophon
+# humanstxt.org/
+
+# TEAM
+
+    Name: Michael Taylor
+    Twitter: @2michaeltaylor
+    LinkedIn: http://www.linkedin.com/in/mjt145
+    Website: https://www.saxifrage.xyz
+
+# THANKS
+
+    - Miguel Grinberg for the The Flask Mega-Tutorial: https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world
+    - The Net Ninja for Materialize Tutorial: https://www.youtube.com/watch?v=gCZ3y6mQpW0
+    - Daniel Fenjves for Flask and Firebase and Pyrebase, Oh my!: https://blog.upperlinecode.com/flask-and-firebase-and-pyrebase-oh-my-f30548d68ea9
+    - William Hill, Jr. for Heating up With Firebase: Tutorial on How to Integrate Firebase Into Your App: https://blog.devcolor.org/heating-up-with-firebase-tutorial-on-how-to-integrate-firebase-into-your-app-6ce97440175d
+
+# TECHNOLOGY COLOPHON
+
+    - Standards: HTML5, CSS3
+    - Components: JQuery, Materialize CSS
+    - Software: Python, Flask, Firebase
+
+Source: https://github.com/mjt145/FireFlask
+Demo: https://fireflask-ef97c.uc.r.appspot.com/
