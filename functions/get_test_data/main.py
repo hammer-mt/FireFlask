@@ -1,54 +1,38 @@
 from flask import jsonify
 import os
+import random
+from datetime import date, timedelta, datetime
 
 def main(request):
     app_id = os.environ.get('APP_ID')
     app_secret = os.environ.get('APP_SECRET')
     access_token = request.args.get('access_token')
 
-    data = [{
-        "date": "2020-01-09",
-        "spend": "8000.00",
-        "clicks": "9900",
-        "impressions": "3050000",
-        "conversions": "1200"
-    }, {
-        "date": "2020-01-10",
-        "spend": "8200.00",
-        "clicks": "10000",
-        "impressions": "3500000",
-        "conversions": "1300"
-    }, {
-        "date": "2020-01-11",
-        "spend": "10000.00",
-        "clicks": "10900",
-        "impressions": "3200000",
-        "conversions": "1400"
-    }, {
-        "date": "2020-01-12",
-        "spend": "9000.00",
-        "clicks": "12000",
-        "impressions": "3700000",
-        "conversions": "1000"
-    }, {
-        "date": "2020-01-13",
-        "spend": "7000.00",
-        "clicks": "8000",
-        "impressions": "3000000",
-        "conversions": "800"
-    }, {
-        "date": "2020-01-14",
-        "spend": "8000.00",
-        "clicks": "9000",
-        "impressions": "3200000",
-        "conversions": "1000"
-    }, {
-        "date": "2020-01-15",
-        "spend": "11000.00",
-        "clicks": "12000",
-        "impressions": "4000000",
-        "conversions": "1500"
-    }]
+    account_id = request.args.get('account_id')
+    date_start = request.args.get('date_start')
+    date_end = request.args.get('date_end')
+
+    s_date = datetime.strptime(date_start, '%Y-%m-%d')
+    e_date = datetime.strptime(date_end, '%Y-%m-%d')
+    delta = e_date - s_date
+    
+    epoch = datetime(1970,1,1)
+    s_since_epoch = (s_date - epoch).days
+    e_since_epoch = (e_date - epoch).days
+    random.seed(s_since_epoch + e_since_epoch + int(account_id))
+
+    shift = random.random() + 0.5
+
+    data = []
+    for d in range(delta.days + 1):
+        date = datetime.strftime(s_date + timedelta(days=d), '%Y-%m-%d')
+        data.append({
+            "date": str(date),
+            "spend": str(round(8000.00*shift,2)),
+            "clicks": str(round(9900*shift, 2)),
+            "impressions": str(round(3050000*shift,2)),
+            "conversions": str(round(1200*shift,2))
+        })
 
     if app_id and app_secret and access_token:
         return jsonify(data)
@@ -59,5 +43,5 @@ if __name__ == '__main__':
     from flask import Flask, request
     app = Flask(__name__)
     app.route('/')(lambda: main(request))
-    app.run()
+    app.run(debug=True)
 
