@@ -33,4 +33,7 @@ def create_app(config_class=Config):
     from app.teams import bp as teams_bp
     app.register_blueprint(teams_bp, url_prefix='/teams')
 
+    from app.charts import bp as charts_bp
+    app.register_blueprint(charts_bp, url_prefix='/charts')
+
     return app

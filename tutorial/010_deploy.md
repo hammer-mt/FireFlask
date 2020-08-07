@@ -8,6 +8,13 @@ Now let's get our application deployed finally so people can visit it on the int
 First let's create our new branch.
 `git checkout -b deploy`
 
+Now add your updates
+`git add .`
+`git commit -m "added updates"`
+
+Commit them by setting upstream
+`git push --set-upstream origin deploy`
+
 We need to install gunicorn to run the server on production (flask run isn't suitable).
 `pip install gunicorn`
 `pip freeze > requirements.txt`

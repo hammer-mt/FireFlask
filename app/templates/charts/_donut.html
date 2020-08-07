@@ -1,0 +1,38 @@
+
+<div class="card-panel">
+    <canvas id="donutChart" width="200" height="317"></canvas>
+</div>
+
+{% block javascript %}
+<script>
+    var chartData = chartData || JSON.parse('{{ data|tojson }}');
+    var data = [];
+    var labels = [];
+    for (i=0; i<chartData.length; i++) {
+        data.push(chartData[i]['spend']);
+        labels.push(chartData[i]['date']);
+    }
+
+    var ctx = document.getElementById('donutChart').getContext('2d');
+    var donutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Spend",
+              backgroundColor: ["#3e95cd", "#8e5ea2","#3cba9f","#e8c3b9","#c45850", "#efefefe"],
+              data: data
+            }
+          ]
+        },
+        options: {
+          title: {
+            display: true,
+            text: 'Spend by day'
+          }
+        }
+    });
+    
+</script>
+{% endblock %}

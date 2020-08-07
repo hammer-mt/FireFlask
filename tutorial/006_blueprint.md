@@ -10,6 +10,8 @@ if (not len(firebase_admin._apps)):
     firebase_admin.initialize_app(cred)
 ```
 
+Ok now onto the blueprint.
+
 Create a new folder called 'auth' in the app folder. This is where the blueprint will live. Also create one called 'main'.
 
 Do the same in the templates folder.

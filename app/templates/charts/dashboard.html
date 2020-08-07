@@ -1,0 +1,48 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+
+<h2>Dashboard</h2>
+
+<div class="row">
+    <!-- Metric Score Card -->
+    <div class="col s4">
+        {% include 'charts/_card.html' %}
+    </div>
+
+    <!-- Metric Score Card -->
+    <div class="col s4">
+        {% include 'charts/_card.html' %}
+    </div>
+
+    <!-- Metric Score Card -->
+    <div class="col s4">
+        {% include 'charts/_card.html' %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Chart JS Bar Chart -->
+    <div class="col s12 m6 l6">
+        {% include 'charts/_bar.html' %}
+    </div>
+
+    <!-- Chart JS line chart -->
+    <div class="col s12 m6 l6">
+        {% include 'charts/_line.html' %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Data in table -->
+    <div class="col s12 m8">
+        {% include 'charts/_table.html' %}
+    </div>
+
+    <!-- Donut chart -->
+    <div class="col s6 m4">
+        {% include 'charts/_donut.html' %}
+    </div>
+</div>
+
+{% endblock %}
