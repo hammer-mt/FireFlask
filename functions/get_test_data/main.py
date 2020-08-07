@@ -21,15 +21,14 @@ def main(request):
     e_since_epoch = (e_date - epoch).days
     random.seed(s_since_epoch + e_since_epoch + int(account_id))
 
-    shift = random.random() + 0.5
-
     data = []
     for d in range(delta.days + 1):
         date = datetime.strftime(s_date + timedelta(days=d), '%Y-%m-%d')
+        shift = random.random() + 0.5
         data.append({
             "date": str(date),
             "spend": str(round(8000.00*shift,2)),
-            "clicks": str(round(9900*shift, 2)),
+            "clicks": str(round(9900*shift,2)),
             "impressions": str(round(3050000*shift,2)),
             "conversions": str(round(1200*shift,2))
         })

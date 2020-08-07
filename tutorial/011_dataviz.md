@@ -788,3 +788,35 @@ If that's all working, then we're good to deploy.
 `gcloud beta functions deploy get_test_data --trigger-http --runtime python37 --project fireflask-ef97c --source C:\Users\Hammer\Documents\Projects\FireFlask\functions\get_test_data --allow-unauthenticated --entry-point=main --update-env-vars APP_ID=123456,APP_SECRET=abcdef`
 
 Then if that works we can visit `https://us-central1-fireflask-ef97c.cloudfunctions.net/get_test_data?access_token=Mike&account_id=123456789&date_start=2020-01-01&date_end=2020-01-07`
+
+We can also update the route to make sure that works.
+
+```
+url = "https://us-central1-fireflask-ef97c.cloudfunctions.net/get_test_data"
+payload = {
+    "access_token": Config.ACCESS_TOKEN,
+    "account_id": "123456789",
+    "date_start": "2020-01-01",
+    "date_end": "2020-01-07"
+    }
+response = requests.get(url, params=payload)
+data = json.loads(response.text)
+```
+
+now go back and activate your main venv
+`deactivate`
+`cd ..`
+`venv\Scripts\activate`
+`flask run`
+
+There we go, dashboard is still working.
+
+Last thing we need to do is accept the date range and account id from the user.
+
+Date range should be pulled from a date picker on the dashboard, and account id should be baked into your team selection. The dashboard should only show once you select a team on the homepage or teams page.
+
+Then the team should show as selected in the navbar, and the account id will be pulled from that team's database.
+
+Lets start with the date picker first.
+https://stackoverflow.com/questions/26057710/datepickerwidget-with-flask-flask-admin-and-wtforms
+https://materializecss.com/pickers.html

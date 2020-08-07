@@ -12,8 +12,9 @@ def dashboard():
     url = "https://us-central1-fireflask-ef97c.cloudfunctions.net/get_test_data"
     payload = {
         "access_token": Config.ACCESS_TOKEN,
-        "account_id": 123456789,
-        "date_range": ["2020-01-01", "2020-01-07"]
+        "account_id": "123456789",
+        "date_start": "2020-01-01",
+        "date_end": "2020-01-07"
         }
     response = requests.get(url, params=payload)
     data = json.loads(response.text)
