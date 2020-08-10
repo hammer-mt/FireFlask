@@ -110,14 +110,12 @@
                 <p class="grey-text">Current user: Anonymous</p>
                 {% endif %}
             </div>
-        </footer>
+        </footer> 
         <script>
             $(document).ready(function () {
                 var endpoint = "#{{request.endpoint}}".replace(/\./g, "-");
                 $(endpoint).addClass("active");
-                $(".dropdown-trigger").dropdown();
-                $('select').formSelect();
             })
-        </script>  
+        </script>
     </body>
 </html>

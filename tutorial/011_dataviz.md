@@ -820,3 +820,107 @@ Then the team should show as selected in the navbar, and the account id will be 
 Lets start with the date picker first.
 https://stackoverflow.com/questions/26057710/datepickerwidget-with-flask-flask-admin-and-wtforms
 https://materializecss.com/pickers.html
+
+We need to add a new file forms.py in charts
+```
+from flask_wtf import FlaskForm
+from wtforms import SubmitField
+from wtforms.fields.html5 import DateField
+
+class DateForm(FlaskForm):
+    start_date = DateField('Start Date', format='%b %d, %Y')
+    end_date = DateField('End Date', format='%b %d, %Y')
+    submit = SubmitField('RUN QUERY')
+```
+
+This gives us the form itself, which we need to load via the routes, which should now look like this.
+
+```
+from flask import render_template, request
+from flask_login import login_required
+from app.charts import bp
+import json
+import requests
+from config import Config
+from app.charts.forms import DateForm
+from datetime import timedelta, datetime
+
+@bp.route('/', methods=['GET', 'POST'])
+# @login_required
+def dashboard():
+    form = DateForm()
+    if form.validate_on_submit():
+        start_date = form.start_date.data.strftime('%Y-%m-%d')
+        end_date = form.end_date.data.strftime('%Y-%m-%d')
+        print(start_date, end_date)
+    else:
+        yesterday = datetime.today() - timedelta(days=1)
+        week_ago = yesterday - timedelta(days=6)
+
+        form.start_date.data = week_ago
+        form.end_date.data = yesterday
+
+        start_date = week_ago.strftime('%Y-%m-%d')
+        end_date = yesterday.strftime('%Y-%m-%d')
+
+    # Run the cloud function
+    url = "https://us-central1-fireflask-ef97c.cloudfunctions.net/get_test_data"
+    payload = {
+        "access_token": Config.ACCESS_TOKEN,
+        "account_id": "123456789",
+        "date_start": start_date,
+        "date_end": end_date
+        }
+    response = requests.get(url, params=payload)
+    data = json.loads(response.text)
+
+    spend = sum([float(row['spend']) for row in data])
+
+    return render_template('charts/dashboard.html', title='Dashboard', data=data, spend=spend, form=form)
+```
+
+Note it's important we pass the right date format to the form to preload the last 7 days, but also that we have the right date format coming out based on what materialize gives us.
+
+We now need to add the form to the top of the charts page.
+
+```
+<div class="row">
+    <div class="input-field col s4">
+        <h2>Dashboard</h2>
+    </div>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        
+        <div class="input-field col s3 date-field">
+            {{ form.start_date(class_='validate datepicker', type="text") }}
+            {{ form.start_date.label() }}
+        </div>
+        <div class="input-field col s3 date-field">
+            {{ form.end_date(class_='validate datepicker', type="text") }}
+            {{ form.end_date.label() }}
+        </div>
+        <div id="run-button" class="col s2 right-align">
+            <button type="submit" name="btn" class="waves-effect waves-light btn red">
+                RUN QUERY
+            </button>
+        </div>
+    </form>
+    
+
+</div>
+```
+
+We could do something more fancy with async loading or url params, but for now this will do!
+
+Finally for some styling, add this to the main css file.
+
+```
+#run-button {
+    margin-top: 4.5em;
+}
+.date-field {
+    margin-top: 4em;
+}
+```
+
+Now we can work on the account id, which means making the dashboard contigent on a team being selected.

@@ -2,7 +2,33 @@
 
 {% block content %}
 
-<h2>Dashboard</h2>
+<div class="row">
+    <div class="input-field col s4">
+        <h2>Dashboard</h2>
+    </div>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        
+        <div class="input-field col s3 date-field">
+            {{ form.start_date(class_='validate datepicker', type="text") }}
+            {{ form.start_date.label() }}
+        </div>
+        <div class="input-field col s3 date-field">
+            {{ form.end_date(class_='validate datepicker', type="text") }}
+            {{ form.end_date.label() }}
+        </div>
+        <div id="run-button" class="col s2 right-align">
+            <button type="submit" name="btn" class="waves-effect waves-light btn red">
+                RUN QUERY
+            </button>
+        </div>
+    </form>
+    
+
+</div>
+
+
+
 
 <div class="row">
     <!-- Metric Score Card -->

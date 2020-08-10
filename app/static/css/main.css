@@ -20,3 +20,9 @@ strong {
 .row {
     margin-bottom: 0em;
 }
+#run-button {
+    margin-top: 4.5em;
+}
+.date-field {
+    margin-top: 4em;
+}
