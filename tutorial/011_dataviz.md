@@ -924,3 +924,255 @@ Finally for some styling, add this to the main css file.
 ```
 
 Now we can work on the account id, which means making the dashboard contigent on a team being selected.
+
+Here's what we need to do:
+- store the team id in the session when selected
+- display the team name in the navigation bar
+- update the Teams model so it has an 'account id'
+- rewrite dashboard to take a team parameter
+- get the account id for the team when visiting dashboard
+
+Let's do the first one, store the team name and id in the session. To do this we just need to add this to the code in the teams/routes.py.
+
+```
+session["team_id"] = team.id
+session["team_name"] = team.name
+```
+
+Now in the navigation let's display it if it's available. First let's refactor the navigation a little, and fix an issue we have with the dropdown menu not showing on mobile.
+
+First copy the navbar component and put it in a _nav.html file or subtemplate.
+
+Then in base.html replace the nav component with an include.
+
+`{% include "main/_nav.html" %}`
+
+To fix the issue where the navbar dropdown disappears on mobile, change it to this.
+
+```
+<!-- Dropdown Trigger -->
+<li>
+    <a class="dropdown-trigger grey-text hide-on-med-and-down" href="#!" data-target="dropdown">
+        Settings<i class="material-icons right">arrow_drop_down</i>
+    </a>
+    <a class="dropdown-trigger grey-text hide-on-large-only" href="#!" data-target="dropdown">
+        <i class="material-icons right">menu</i>
+    </a>
+</li>
+```
+
+
+Ok now let's write the code for conditionally showing the team when selected.
+
+```
+{% if session.team_name %}
+<li class="active">
+    <a class="grey-text" href="{{ url_for('teams.view_team', team_id=session.team_id) }}">
+        <span class="hide-on-large-only">
+            <i class="material-icons">supervisor_account</i>
+        </span>
+        <span class="hide-on-med-and-down">
+            <i class="material-icons left">supervisor_account</i>
+            {{ session.team_name }}
+        </span>
+    </a>
+</li>
+{% else %}
+<li>
+    <a class="grey-text" href="{{ url_for('teams.list_teams') }}">
+        <i class="material-icons left">supervisor_account</i>
+        <span class="hide-on-med-and-down">Select Team</span>
+    </a>
+</li>
+
+{% endif %}
+```
+
+If there is a team in the session, we show the team  name and a link to that team. If not, we show a prompt to go to the all teams page and select one there. We made the text in the menu hide on smaller sizes and get replaced by icons on mobile.
+
+Now let's make it so we can save or retrieve an account id from the team. First edit models.py in teams to make it include the account_id.
+
+```
+class Team():
+    def __init__(self, id_, name, account_id):
+        self.id = id_
+        self.name = name
+        self.account_id = account_id
+    
+    @staticmethod
+    def get(team_id):
+        team_data = pyr_db.child('teams').child(team_id).get().val()
+        team = Team(
+            id_=team_id, 
+            name=team_data['name'],
+            account_id=team_data.get('account_id')
+        )
+        return team
+
+    @staticmethod
+    def create(name):
+        team_res = pyr_db.child('teams').push({
+            "name": name
+        })
+        team_id = team_res['name'] # api sends id back as 'name'
+        print('Sucessfully created new team: {0}'.format(team_id))
+
+        team = Team.get(team_id)
+        return team
+
+    def update(self, name, account_id):
+        pyr_db.child('teams').child(self.id).update({
+            "name": name,
+            "account_id":account_id 
+        })
+
+        self.name = name
+        self.account_id = account_id
+```
+
+Then change the edit route for teams.
+
+```
+@bp.route('/<team_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_team(team_id):
+
+    role = Membership.user_role(current_user.id, team_id)
+    if role not in ["ADMIN", "OWNER"]:
+        abort(401, "You don't have access to edit this team.")
+
+    form = TeamForm()
+
+    team = Team.get(team_id)
+
+    if form.validate_on_submit():
+        name = form.name.data
+        account_id = form.account_id.data
+
+        #edit a team
+        try:
+            team.update(name, account_id)
+
+            # Update successful
+            flash('Team {}, updated with name={}'.format(
+                 team.id, team.name), 'teal')
+
+            return redirect(url_for('teams.view_team', team_id=team.id))
+
+        except Exception as e:
+            # Update unsuccessful
+            flash("Error: {}".format(e), 'red')
+
+    form.name.data = team.name
+    form.account_id.data = team.account_id
+        
+    return render_template('teams/edit_team.html', title='Edit Team', form=form, 
+        team=team)
+```
+
+In the form add the new field.
+
+```
+class TeamForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    account_id = StringField('Account ID')
+    submit = SubmitField('SUBMIT')
+```
+
+Then in the edit_team.html, add the form field
+
+```
+<p class="input-field">
+    {{ form.account_id.label }}<br>
+    {{ form.account_id(size=32, class_="validate") }}<br>
+    {% for error in form.account_id.errors %}
+    <span class="helper-text" data-error="[{{ error }}]" data-success=""></span>
+    {% endfor %}
+</p>
+```
+
+Also display the account id in the view_team.html
+
+```
+<tr>
+    <td>Account ID</td>
+    <td>{{ team.account_id }}</td>
+</tr>  
+
+```
+
+Now that's working, let's do the final part, which is passing the account_id when loading the dashboard.
+
+Back in charts routes, add these imports
+`from flask import render_template, request, flash, redirect, url_for, session, abort`
+`from app.teams.models import Team`
+
+Then add this logic to the controller.
+
+```
+if not session.get('team_id'):
+    # No team selected
+    flash("Please select a team", 'orange')
+    return redirect(url_for('teams.list_teams'))
+else:
+    team = Team.get(session.get('team_id'))
+    account_id = team.account_id
+
+    if not account_id:
+        # No account id for team
+        flash("Please update Account ID", 'orange')
+        return redirect(url_for('teams.edit_team', team_id=team.id))
+```
+
+This kicks the user back to teams if they don't have a team selected, then to edit the team if they don't have an account id.#
+
+Update the running of the cloud function to pass the account_id
+
+```
+ # Run the cloud function
+url = "https://us-central1-fireflask-ef97c.cloudfunctions.net/get_test_data"
+payload = {
+    "access_token": Config.ACCESS_TOKEN,
+    "account_id": account_id,
+    "date_start": start_date,
+    "date_end": end_date
+    }
+response = requests.get(url, params=payload)
+data = json.loads(response.text)
+
+spend = sum([float(row['spend']) for row in data])
+
+return render_template('charts/dashboard.html', title='Dashboard', data=data, spend=spend, form=form, account_id=account_id)
+```
+
+Let's add a link to the dashboard from the team page
+```
+<div class="col s6 m3">
+    <a href="{{ url_for('charts.dashboard') }}">
+        <div class="card-panel">
+            Go to dashboard
+        </div>
+    </a>    
+</div>
+```
+
+There, we're done with dataviz for now! If an owner doesn't configure an account id and they invite someone to look, they'll get a nasty abort message, which isn't a great user experience - lets make a note to deal with that later on.
+
+Remember to fully implement this we push, merge, push, deploy
+`git status`
+`git add .`
+`git commit -m "finished dataviz"`
+`git push`
+`git checkout master`
+`git pull`
+`git merge dataviz`
+`git push`
+
+Then over to the other terminal where you have gcloud
+`cd C:\Users\Hammer\Documents\Projects\FireFlask\` <!-- only if you changed directories -->
+`gcloud config set project fireflask-ef97c` <!-- only if you changed projects -->
+`gcloud app deploy`
+`gcloud app browse`
+
+
+

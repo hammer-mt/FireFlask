@@ -1,14 +1,15 @@
-from flask import render_template, request
+from flask import render_template, request, flash, redirect, url_for, session, abort
 from flask_login import login_required
 from app.charts import bp
 import json
 import requests
 from config import Config
 from app.charts.forms import DateForm
+from app.teams.models import Team
 from datetime import timedelta, datetime
 
 @bp.route('/', methods=['GET', 'POST'])
-# @login_required
+@login_required
 def dashboard():
     form = DateForm()
     if form.validate_on_submit():
@@ -25,11 +26,24 @@ def dashboard():
         start_date = week_ago.strftime('%Y-%m-%d')
         end_date = yesterday.strftime('%Y-%m-%d')
 
+    if not session.get('team_id'):
+        # No team selected
+        flash("Please select a team", 'orange')
+        return redirect(url_for('teams.list_teams'))
+    else:
+        team = Team.get(session.get('team_id'))
+        account_id = team.account_id
+
+        if not account_id:
+            # No account id for team
+            flash("Please update Account ID", 'orange')
+            return redirect(url_for('teams.edit_team', team_id=team.id))
+    
     # Run the cloud function
     url = "https://us-central1-fireflask-ef97c.cloudfunctions.net/get_test_data"
     payload = {
         "access_token": Config.ACCESS_TOKEN,
-        "account_id": "123456789",
+        "account_id": account_id,
         "date_start": start_date,
         "date_end": end_date
         }
@@ -38,4 +52,4 @@ def dashboard():
 
     spend = sum([float(row['spend']) for row in data])
 
-    return render_template('charts/dashboard.html', title='Dashboard', data=data, spend=spend, form=form)
+    return render_template('charts/dashboard.html', title='Dashboard', data=data, spend=spend, form=form, account_id=account_id)

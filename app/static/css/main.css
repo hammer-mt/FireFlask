@@ -26,3 +26,6 @@ strong {
 .date-field {
     margin-top: 4em;
 }
+.inline-icon {
+    vertical-align: bottom;
+ }

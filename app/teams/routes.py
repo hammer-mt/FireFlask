@@ -2,7 +2,7 @@ from flask import render_template, flash, redirect, url_for, session, escape, ab
 from flask_login import current_user, login_required
 from app.teams.forms import TeamForm, InviteForm
 from app.teams import bp
-from app.auth.models import User, Team, Membership
+from app.auth.models import User
 from app.teams.models import Team, Membership
 
 import requests
@@ -62,6 +62,9 @@ def view_team(team_id):
     if not authorized:
         abort(401, "You don't have access to that team")
 
+    session["team_id"] = team.id
+    session["team_name"] = team.name
+
     title = 'View Team {}'.format(team.name)
         
     return render_template('teams/view_team.html', title=title, team=team, team_members=team_members, role=role)
@@ -81,10 +84,11 @@ def edit_team(team_id):
 
     if form.validate_on_submit():
         name = form.name.data
+        account_id = form.account_id.data
 
         #edit a team
         try:
-            team.update(name)
+            team.update(name, account_id)
 
             # Update successful
             flash('Team {}, updated with name={}'.format(
@@ -97,6 +101,7 @@ def edit_team(team_id):
             flash("Error: {}".format(e), 'red')
 
     form.name.data = team.name
+    form.account_id.data = team.account_id
         
     return render_template('teams/edit_team.html', title='Edit Team', form=form, 
         team=team)

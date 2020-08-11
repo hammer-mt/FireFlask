@@ -4,6 +4,7 @@ from wtforms.validators import DataRequired, Email, Length
 
 class TeamForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
+    account_id = StringField('Account ID')
     submit = SubmitField('SUBMIT')
 
 class InviteForm(FlaskForm):

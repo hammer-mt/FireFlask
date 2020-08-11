@@ -16,6 +16,13 @@
                     <span class="helper-text" data-error="[{{ error }}]" data-success=""></span>
                     {% endfor %}
                 </p>
+                <p class="input-field">
+                    {{ form.account_id.label }}<br>
+                    {{ form.account_id(size=32, class_="validate") }}<br>
+                    {% for error in form.account_id.errors %}
+                    <span class="helper-text" data-error="[{{ error }}]" data-success=""></span>
+                    {% endfor %}
+                </p>
                 <p class="right-align">
                     <button type="submit" name="btn" class="waves-effect waves-light btn blue">
                     UPDATE

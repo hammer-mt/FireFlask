@@ -3,16 +3,18 @@ from firebase_admin import auth
 
             
 class Team():
-    def __init__(self, id_, name):
+    def __init__(self, id_, name, account_id):
         self.id = id_
         self.name = name
+        self.account_id = account_id
     
     @staticmethod
     def get(team_id):
         team_data = pyr_db.child('teams').child(team_id).get().val()
         team = Team(
             id_=team_id, 
-            name=team_data['name']
+            name=team_data['name'],
+            account_id=team_data.get('account_id')
         )
         return team
 
@@ -27,12 +29,14 @@ class Team():
         team = Team.get(team_id)
         return team
 
-    def update(self, name):
+    def update(self, name, account_id):
         pyr_db.child('teams').child(self.id).update({
-            "name": name
+            "name": name,
+            "account_id":account_id 
         })
 
         self.name = name
+        self.account_id = account_id
 
 
 class Membership():

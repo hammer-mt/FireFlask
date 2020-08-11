@@ -8,16 +8,25 @@
     <h1>Hi, {{ current_user.name }}!</h1>
 
     <div class="row">
-        <div class="col s6 m3">
+    {% if session.team_id %}
+        <div class="col s12 m8 l7">
             <a href="{{ url_for('charts.dashboard') }}">
                 <div class="card-panel">
-                    Go to dashboard
+                    <i class="material-icons inline-icon">insert_chart</i>
+                    &nbsp;Go to dashboard >
                 </div>
             </a>    
         </div>
+    {% else %}
+        <div class="col s12 m8 l7">
+            <a href="{{ url_for('teams.list_teams') }}">
+                <div class="card-panel red lighten-4">
+                    Please select a team
+                </div>
+            </a>   
+        </div>
+    {% endif %}
     </div>
-
-    
 
     <!-- Unauthenticated users -->
     {% else %}

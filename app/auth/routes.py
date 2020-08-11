@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
 from app.auth.forms import SignInForm, SignUpForm, ResetPasswordForm, EditProfileForm, UploadPhotoForm
 from app.auth import bp
 from app import login_manager
-from app.auth.models import User, Team, Membership
+from app.auth.models import User
 
 import requests
 import json

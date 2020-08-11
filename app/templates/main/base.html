@@ -50,41 +50,9 @@
         </p>
 
         {% endif %}
-        <!-- NAVBAR -->
-        <nav class="z-depth-0 grey lighten-4">
-            <div class="nav-wrapper container">
-                <a href="{{ url_for('main.index') }}" class="brand-logo">
-                    <span class="grey-text">⚗️ FireFlask</span>
-                </a>
-                <ul id="nav-mobile" class="right hide-on-med-and-down">
-                    {% if current_user.is_authenticated %}
-                    <!-- Dropdown Structure -->
-                    <ul id="dropdown" class="dropdown-content">
-                        <li id="main-index" class="index"><a href="{{ url_for('main.index') }}">Home</a></li>
-                        <li id="auth-view_profile"><a href="{{ url_for('auth.view_profile') }}">Profile</a></li>
-                        <li id="auth-list_teams"><a href="{{ url_for('teams.list_teams') }}">Teams</a></li>
-                        <li class="divider"></li>
-                        <li>
-                            <a href="{{ url_for('auth.sign_out') }}" class="grey-text">Sign Out</a>
-                        </li>
-                    </ul>
-                    <!-- Dropdown Trigger -->
-                    <li>
-                        <a class="dropdown-trigger grey-text" href="#!" data-target="dropdown">Settings<i class="material-icons right">arrow_drop_down</i></a>
-                    </li>
 
-                    {% else %}
-                    <li id="auth-sign_in">
-                        <a href="{{ url_for('auth.sign_in') }}" class="grey-text">Sign In</a>
-                    </li>
-                    <li id="auth-sign_up">
-                        <a href="{{ url_for('auth.sign_up') }}" class="waves-effect waves-light btn">Sign Up</a>
-                    </li>
-                    {% endif %}
-                </span>
-                </ul>
-            </div>
-        </nav>
+        {% include "main/_nav.html" %}
+
         <main>
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
