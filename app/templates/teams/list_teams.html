@@ -2,16 +2,21 @@
 
 {% block content %}
 <h3>Teams</h3>
-<p>A list of all of the teams you have access to.</p>
 
 <div class="row">
-    <a href="{{ url_for('teams.add_team') }}">
-        <button type="submit" name="btn" class="waves-effect waves-light btn red">
-            ADD
-        </button>
-    </a>
+    <div class="col s6">
+        <p>A list of all of the teams you have access to.</p>
+    </div>
+    <div class="col s2 offset-s4 right-align">
+        <a href="{{ url_for('teams.add_team') }}">
+            <button type="submit" name="btn" class="waves-effect waves-light btn red">
+                ADD TEAM
+            </button>
+        </a>
+    </div>
 
 </div>
+<br>
 
 
 <div class="row">

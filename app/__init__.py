@@ -36,4 +36,7 @@ def create_app(config_class=Config):
     from app.charts import bp as charts_bp
     app.register_blueprint(charts_bp, url_prefix='/charts')
 
+    from app.connectors import bp as connectors_bp
+    app.register_blueprint(connectors_bp, url_prefix='/connectors')
+
     return app

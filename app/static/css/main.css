@@ -28,4 +28,11 @@ strong {
 }
 .inline-icon {
     vertical-align: bottom;
- }
+}
+.connector {
+    height: 12em;
+    overflow: hidden;
+}
+.connector-title {
+    margin-bottom: 1em !important;
+}

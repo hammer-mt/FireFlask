@@ -36,7 +36,7 @@ def dashboard():
 
         if not account_id:
             # No account id for team
-            flash("Please update Account ID", 'orange')
+            flash("Please ask account owner to update Account ID", 'orange')
             return redirect(url_for('teams.edit_team', team_id=team.id))
     
     # Run the cloud function

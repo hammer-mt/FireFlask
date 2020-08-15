@@ -33,7 +33,8 @@
             <ul id="dropdown" class="dropdown-content">
                 <li id="main-index" class="index"><a href="{{ url_for('main.index') }}">Home</a></li>
                 <li id="auth-view_profile"><a href="{{ url_for('auth.view_profile') }}">Profile</a></li>
-                <li id="auth-list_teams"><a href="{{ url_for('teams.list_teams') }}">Teams</a></li>
+                <li id="teams-list_teams"><a href="{{ url_for('teams.list_teams') }}">Teams</a></li>
+                <li id="connectors-list_connectors"><a href="{{ url_for('connectors.list_connectors') }}">Connectors</a></li>
                 <li class="divider"></li>
                 <li>
                     <a href="{{ url_for('auth.sign_out') }}" class="grey-text">Sign Out</a>
