@@ -16,3 +16,10 @@ class Config(object):
     }
 
     ACCESS_TOKEN = os.environ.get('ACCESS_TOKEN')
+
+    CONNECTORS = {
+        "facebook_app_id": "2380723265555589",
+        "facebook_app_secret": os.environ.get('FACEBOOK_APP_SECRET'),
+        "facebook_authorization_endpoint": "https://www.facebook.com/v6.0/dialog/oauth",
+        "facebook_token_endpoint": "https://graph.facebook.com/v6.0/oauth/access_token"
+    }

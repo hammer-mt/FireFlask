@@ -16,3 +16,15 @@ def list_connectors():
         print(team.id, current_user.id)
 
     return render_template('connectors/list_connectors.html', title='Connectors', team=team)
+
+@bp.route('/connections/<platform>')
+@login_required
+def connect(platform):
+    if platform == "facebook":
+        token = "test_abc123"
+        team = Team.get(session.get('team_id'))
+        team.facebook_connect(token)
+
+        print(team.facebook_token)
+
+    return redirect(url_for('connectors.list_connectors'))

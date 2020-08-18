@@ -1,7 +1,7 @@
 {% extends "main/base.html" %}
 
 {% block content %}
-<h3>Teams</h3>
+<h3>Connectors</h3>
 
 <div class="row">
     <div class="col s6">
@@ -17,7 +17,7 @@
 
 <div class="row">
     <div class="col s12 m6 l4">
-        <a href="#">
+        <a href="{{ url_for('connectors.connect', platform='facebook') }}">
             <div class="card">
                 <div class="card-content center-align connector">
                     <span class="card-title connector-title">Facebook Ads</span>

@@ -91,15 +91,15 @@ Or we can visit http://127.0.0.1:5000/connectors
 
 The way we want connectors to work is as follows:
 
-- if a user visits the connectors page without a team selected, it prompts them to choose a team
+- the connections page won't be visible for anyone who's not the owner of the account
+- if an owner visits the connectors page without a team selected, it prompts them to choose a team
 - when on the team page, there will be a link to connectors, and the link in the navbar will work
-- visiting the connectors page will list all connectors for that user and team
+- visiting the connectors page will list all connectors for that owner and team
 - there will be one connector per platform (in this case for now just Facebook Ads)
 - if the connector isn't connected, you have to option to connect, if it is, you can reconnect
 - clicking connect will take you through the oauth process to get and store a token
 - reconnect will do the same, except the old token that was stored will be replaced
-- the token will be stored in a connection option in the database, with team id and user id
-- the connections page won't be visible for anyone who's not the owner of the account
+- the token will be stored in the database under team, but not visible in the team page
 
 First step, let's borrow the logic we used in charts to redirect the user if they haven't selected a team.
 
@@ -195,6 +195,117 @@ Then add these properties so it works.
 Do a hard refresh, CTRL + F5 to reload.
 
 Now let's do the oauth handshake routing. For this we'll need to do a lot of configuration so that when we ping facebook they come back with a form that the user can login and authorize, which then we can get the tokens.
+
+First we need to make a new Facebook app by visiting here: https://developers.facebook.com/apps/
+
+Click to add new app and choose business integrations.
+
+Give it a name, contact email and select if you're just using it for yourself or for others. You can also choose to connect it to a business manager.
+
+Copy the app ID (should be at the top of the page) and the app secret (in settings > basic). While you're there, add to the App Domains:
+`http://127.0.0.1:5000/`
+and
+`https://fireflask-ef97c.uc.r.appspot.com/`
+
+Add the following to your config.py class
+
+```
+CONNECTORS = {
+    "facebook_app_id": "2380723265555589",
+    "facebook_app_secret": os.environ.get('FACEBOOK_APP_SECRET'),
+    "facebook_authorization_endpoint": "https://www.facebook.com/v6.0/dialog/oauth",
+    "facebook_token_endpoint": "https://graph.facebook.com/v6.0/oauth/access_token"
+}
+```
+
+Then in your flaskenv file add the facebook app secret:
+`FACEBOOK_APP_SECRET=abcdefghijklmnopqrstuvwxyz`
+
+also in your env.yaml.
+`FACEBOOK_APP_SECRET: abcdefghijklmnopqrstuvwxyz`
+
+Great, now let's add the routes we need to connectors.
+
+First let's just simply pass the name of the platform across to our route.
+
+In list_connectors the card in an a tag with this href:
+`<a href="{{ url_for('connectors.connect', platform='facebook') }}">`
+
+Then in routes we need this:
+```
+@bp.route('/connections/<platform>')
+@login_required
+def connect(platform):
+    print(platform)
+    return redirect(url_for('connectors.list_connectors'))
+```
+
+You should see it returns you back to the connectors page and prints out facebook to the console.
+
+Ok now let's hardcode a token (pretend facebook is sending one back) and figure out our adjustment to teams.
+
+First modify the init method for Team:
+
+```
+def __init__(self, id_, name, account_id, facebook_token=None):
+    self.id = id_
+    self.name = name
+    self.account_id = account_id
+    self.facebook_token = facebook_token
+```
+Note we pass None as the default, so we don't need to modify all our other code around creating teams.
+
+Then the get method:
+```
+@staticmethod
+def get(team_id):
+    team_data = pyr_db.child('teams').child(team_id).get().val()
+    team = Team(
+        id_=team_id, 
+        name=team_data['name'],
+        account_id=team_data.get('account_id'),
+        facebook_token=team_data.get('facebook_token')
+    )
+    return team
+```
+
+So then we want a new method to just save the facebook token.
+
+```
+def facebook_connect(self, token):
+    pyr_db.child('teams').child(self.id).update({
+        "facebook_token": token,
+    })
+
+    self.facebook_token = token
+```
+
+Now we should be able to modify the route to save the token and print a test token.
+
+```
+@bp.route('/connections/<platform>')
+@login_required
+def connect(platform):
+    if platform == "facebook":
+        token = "test_abc123"
+        team = Team.get(session.get('team_id'))
+        team.facebook_connect(token)
+
+        print(team.facebook_token)
+
+    return redirect(url_for('connectors.list_connectors'))
+```
+
+Now if you run this it should print the token, and save it to the realtime database in firebase.
+
+So now what we need to do is complete the Facebook oauth handshake to get the tokens.
+
+The oauth handshake process works like this:
+- 1: user clicks on connect facebook button
+- 2: attempt connection to facebook
+- 3: user authenticates with facebook
+- 4: auth code comes back from facebook
+- 5: auth code exchanged for access token
 
 
 
