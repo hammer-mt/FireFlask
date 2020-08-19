@@ -4,6 +4,7 @@ Now for a big leap in our applications usefulness - connecting to an external AP
 
 - [https://realpython.com/flask-google-login/](https://realpython.com/flask-google-login/)
 - [https://blog.miguelgrinberg.com/post/oauth-authentication-with-flask](https://blog.miguelgrinberg.com/post/oauth-authentication-with-flask)
+- [https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow](https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow)
 
 Because we plan to add multiple connectors, to keep our code clean, we're going to abstract away connectors into its own blueprint. So let's run through that setup process first.
 
@@ -233,7 +234,7 @@ In list_connectors the card in an a tag with this href:
 
 Then in routes we need this:
 ```
-@bp.route('/connections/<platform>')
+@bp.route('/<platform>')
 @login_required
 def connect(platform):
     print(platform)
@@ -283,7 +284,7 @@ def facebook_connect(self, token):
 Now we should be able to modify the route to save the token and print a test token.
 
 ```
-@bp.route('/connections/<platform>')
+@bp.route('/<platform>')
 @login_required
 def connect(platform):
     if platform == "facebook":
@@ -298,6 +299,90 @@ def connect(platform):
 
 Now if you run this it should print the token, and save it to the realtime database in firebase.
 
+Lets also change the state of the button when it is connected, and provide a way to sever the connection.
+
+```
+ <div class="card">
+    <div class="card-content center-align connector">
+        <span class="card-title connector-title">Facebook Ads</span>
+        <i class="fa fa-facebook-f fa-5x blue-text"></i>
+    </div>
+    <div class="card-action">
+        <p class="center-align">
+            {% if team.facebook_token %}
+            <button type="submit" name="btn" class="waves-effect waves-light btn pink disabled">
+                CONNECTED
+            </button>
+            {% else %}
+            <a href="{{ url_for('connectors.connect', platform='facebook') }}">
+                <button type="submit" name="btn" class="waves-effect waves-light btn pink">CONNECT</button>
+            </a>
+            {% endif %}
+        </p>
+    </div>
+</div>
+```
+
+This should make the button go gray when the facebook token is available.
+
+Now let's make a route where they could disconnect.
+
+```
+@bp.route('/<platform>/disconnect')
+@login_required
+def disconnect(platform):
+    if platform == "facebook":
+        team = Team.get(session.get('team_id'))
+        team.facebook_connect(None)
+
+    return redirect(url_for('connectors.list_connectors'))
+```
+
+This just passes none instead of the token, wiping it out.
+
+Then lets modify the template again to allow this behavior. 
+```
+<div class="card">
+    <div class="card-content center-align connector">
+        <span class="card-title connector-title">Facebook Ads</span>
+        <i class="fa fa-facebook-f fa-5x blue-text"></i>
+    </div>
+    <div class="card-action">
+        {% if team.facebook_token %}
+        <div class="row center-align">
+            <button type="submit" name="btn" class="waves-effect waves-light btn pink disabled">
+                CONNECTED
+            </button>
+        </div>
+        
+        <a href="{{ url_for('connectors.disconnect', platform='facebook') }}">
+            <div class="row center-align disconnect">
+                Disconnect <i class="tiny material-icons inline-icon">close</i>
+            </div>
+        </a>
+        
+        {% else %}
+        <a href="{{ url_for('connectors.connect', platform='facebook') }}">
+            <div class="row center-align">
+                <button type="submit" name="btn" class="waves-effect waves-light btn pink">CONNECT</button>
+            </div>
+        </a>
+        
+        {% endif %}
+    </div>
+</div>
+```
+
+Now there's a link underneath the button that says diconnect, which leads to our disconnect route. The spacing looks off so let's add this to the CSS.
+```
+.disconnect {
+    margin-top: 1em !important;
+    font-size: 0.7em;
+}
+```
+
+Clicking it should remove the token, then connecting again should show it.
+
 So now what we need to do is complete the Facebook oauth handshake to get the tokens.
 
 The oauth handshake process works like this:
@@ -307,11 +392,471 @@ The oauth handshake process works like this:
 - 4: auth code comes back from facebook
 - 5: auth code exchanged for access token
 
+We'll trigger step 2 with our connectors/facebook function, then facebook will want to send us an auth code to a callback function, which will be another route.
 
+In that route, we'd then save the token on authorization.
 
+We will need our Facebook secrets etc so let's check they're loading properly. Import config into route:
+`from config import Config`
+
+Put this in one of the routes to check it's working:
+`print(Config.CONNECTORS['facebook_app_id'])`
+
+Let's start backwards and work on the call back first - this is when the user has authenticated and facebook is sending us an auth code.
+
+Copy the connect route, and change it to this:
+`@bp.route('/<platform>/callback')`
+
+We're going to need to import request from flask, and requests and json libraries too.
+`from flask import render_template, session, flash, redirect, url_for, request`
+`import requests`
+`import json`
+
+Then what we write next goes in place of the token assignment.
+
+First get the access code from the request from Facebook.
+
+```
+# Get authorization code Facebook sent back to you
+code = request.args.get("code")
+print("callback got it: ", code)
+```
+
+Then we need to construct the token URL where we exchange the code for a token.
+
+This needs the following parameters:
+- the app client
+- the secret code for the app
+- the access code
+- the callback parm (where facebook will send the token)
+```
+# Construct the token URL
+client_param = "?client_id=" + Config.CONNECTORS['facebook_app_id']
+secret_param = "&client_secret=" + Config.CONNECTORS['facebook_app_secret']
+code_param = '&code=' + code
+callback_param = '&redirect_uri=' + request.base_url
+
+token_url = Config.CONNECTORS['facebook_token_endpoint'] + client_param + secret_param + callback_param + code_param
+
+print("trying url: ", token_url)
+```
+
+Then you need to get the token from the response.
+
+```
+# Get the token
+token_response = requests.post(token_url)
+
+# Parse the token
+print("token dump:", json.dumps(token_response.json()))
+
+token = token_response.json().get('access_token')
+```
+
+Then of course you need to save the token via teams as per before.
+
+```
+# Save the token
+team = Team.get(session.get('team_id'))
+team.facebook_connect(token)
+```
+
+You might also want to flash to the user if token didn't come back.
+
+So add this to the top of the route: `token = None`
+
+Then do this at the bottom before redirect.
+```
+if token:
+        flash(f"{platform} connected", 'pink')
+    else:
+        flash(f"Error: {platform} not connected", 'red')
+
+```
+
+Great, there's a lot going on there but let's just move on to initiating the auth with facebook and then check if it all works.
+
+The following code goes in the route for connect.
+
+```
+# Build URI for auth endpoint
+client_param = "?client_id=" + Config.CONNECTORS['facebook_app_id']
+callback_param = '&redirect_uri=' + request.base_url + '/callback'
+state_param = '&state=' + session['csrf_token']
+scope_param = "&scope=ads_read"
+
+request_uri = Config.CONNECTORS['facebook_authorization_endpoint'] + client_param + callback_param + state_param + scope_param
+
+return redirect(request_uri)
+```
+This is a lot simpler, and it just needs the app id from you. You can also pass the csrf token and check that on the backend. Note we're just asking for read access, but you might want to change the scope if you need to put ads live or make other changes.
+
+First let's change some settings in Facebook to allow this to work.
+
+Add the Facebook login product and change the `Embedded Browser OAuth Login` setting to YES
+
+Add this to the Valid OAuth Redirect URIs
+`https://127.0.0.1:5000/connectors/facebook/callback`
+`https://fireflask-ef97c.uc.r.appspot.com/connectors/facebook/callback`
+
+Now we have to trick facebook into thinking our local host is https.
+- [http://blog.shea.io/facebook-authentication-for-flask-apps/](http://blog.shea.io/facebook-authentication-for-flask-apps/)
+- [https://blog.miguelgrinberg.com/post/running-your-flask-application-over-https](https://blog.miguelgrinberg.com/post/running-your-flask-application-over-https)
+- [https://kracekumar.com/post/54437887454/ssl-for-flask-local-development/](https://kracekumar.com/post/54437887454/ssl-for-flask-local-development/)
+- [https://zhangtemplar.github.io/flask/](https://zhangtemplar.github.io/flask/)
+- [https://support.acquia.com/hc/en-us/articles/360004175973-Using-an-etc-hosts-file-for-custom-domains-during-development](https://support.acquia.com/hc/en-us/articles/360004175973-Using-an-etc-hosts-file-for-custom-domains-during-development)
+- [https://support.acquia.com/hc/en-us/articles/360004175973-Using-an-etc-hosts-file-for-custom-domains-during-development](https://support.acquia.com/hc/en-us/articles/360004175973-Using-an-etc-hosts-file-for-custom-domains-during-development)
+
+So we have to install pyOpenSSL
+`pip install pyopenssl`
+`pip freeze requirements.txt`
+
+Then run flask but with an adhoc ssl certificate:
+`flask run --cert=adhoc`
+
+Now visit the https site and click through to ignore the warnings (advanced > accept the risk and continue).
+https://127.0.0.1:5000/
+
+Ok let's see if this works!
+
+You should get a warning that you need to submit for review - shouldn't be needed just for testing, so you should be good as it is.
+
+Check the token appears as usual, except this time it's a proper facebook token!
+
+You can validate this by visiting `https://developers.facebook.com/tools/debug/accesstoken/`
+
+Input the token and it'll tell you more info about it.
+
+If you want to see if the ads permission worked properly, you can run a query in the Graph API Explorer here:
+`https://developers.facebook.com/tools/explorer/`
+
+Put your access token in, and put this link in the GET section: 
+`me?fields=id,name,adaccounts{amount_spent,name}`
+
+Then hit submit - you should be able to get a list of the ad accounts and spend the user has access to.
+
+Note: this is why you shouldn't give your token to anyone - they can access any of your information just as if they had the password to your account!
 
 Now we've got the ability to collect the token, let's connect this up properly
 - write a new cloud function that pulls based on the facebook token of the user
 - create a new dashboard that works based on the new connector
-- anyone on the team will see data pulled from that connection set by the owner
-- if they aren't the owner, they will get a prompt to contact the owner to connect
+
+Before we write our cloud function, let's just test the endpoint with the Graph Explorer tool we were just using.
+
+That way we can make sure it returns the data we need without having to continually upload our code.
+
+If we want to know what parameters are available, we can take a look at the documentation.
+`https://developers.facebook.com/docs/marketing-api/insights/parameters/v6.0#parameters-and-fields`
+
+If we want to pull account level data, the end point is the account id prepended by `act_`, then ended with /insights. So for example
+`act_10152696796219352/insights`
+
+Then we just need to add the params, for example: 
+- level (account, campaigns, adsets, ads) how you want the results broken down by structure
+- fields (spend, impressions, inline_link_clicks, actions) this is the data we want to pull*
+- date_preset (last_30d) this gives us the last 30 days data
+- time_increment (1) this breaks the data out by day
+
+*note: actions are where we can find our conversions, and inline_link_clicks is clicks out to our site.
+
+The final query looks like this:
+`act_10152696796219352/insights?level=account&fields=spend,impressions,inline_link_clicks,actions&date_preset=last_30d&time_increment=1`
+
+It should give you back some data in the following format:
+```
+{
+  "data": [
+    {
+      "spend": "1044.84",
+      "impressions": "104770",
+      "inline_link_clicks": "287",
+      "actions": [
+        {
+          "action_type": "landing_page_view",
+          "value": "97"
+        },
+        {
+          "action_type": "comment",
+          "value": "4"
+        },
+        {
+          "action_type": "onsite_conversion.post_save",
+          "value": "4"
+        },
+        {
+          "action_type": "like",
+          "value": "2"
+        },
+        {
+          "action_type": "link_click",
+          "value": "287"
+        },
+        {
+          "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+          "value": "91"
+        },
+        {
+          "action_type": "offsite_conversion.fb_pixel_purchase",
+          "value": "70"
+        },
+        {
+          "action_type": "post",
+          "value": "2"
+        },
+        {
+          "action_type": "post_reaction",
+          "value": "10"
+        },
+        {
+          "action_type": "video_view",
+          "value": "6988"
+        },
+        {
+          "action_type": "post_engagement",
+          "value": "7295"
+        },
+        {
+          "action_type": "page_engagement",
+          "value": "7297"
+        },
+        {
+          "action_type": "omni_initiated_checkout",
+          "value": "91"
+        },
+        {
+          "action_type": "omni_purchase",
+          "value": "70"
+        },
+        {
+          "action_type": "initiate_checkout",
+          "value": "91"
+        },
+        {
+          "action_type": "purchase",
+          "value": "70"
+        }
+      ],
+      "date_start": "2020-07-20",
+      "date_stop": "2020-07-20"
+    },
+    {
+      "spend": "1064.23",
+      "impressions": "98900",
+      "inline_link_clicks": "266",
+      "actions": [
+        {
+          "action_type": "landing_page_view",
+          "value": "101"
+        },
+        {
+          "action_type": "comment",
+          "value": "3"
+        },
+        {
+          "action_type": "onsite_conversion.post_save",
+          "value": "5"
+        },
+        {
+          "action_type": "like",
+          "value": "1"
+        },
+        {
+          "action_type": "link_click",
+          "value": "266"
+        },
+        {
+          "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+          "value": "111"
+        },
+        {
+          "action_type": "offsite_conversion.fb_pixel_purchase",
+          "value": "86"
+        },
+        {
+          "action_type": "post",
+          "value": "4"
+        },
+        {
+          "action_type": "post_reaction",
+          "value": "12"
+        },
+        {
+          "action_type": "video_view",
+          "value": "6895"
+        },
+        {
+          "action_type": "post_engagement",
+          "value": "7185"
+        },
+        {
+          "action_type": "page_engagement",
+          "value": "7186"
+        },
+        {
+          "action_type": "omni_initiated_checkout",
+          "value": "111"
+        },
+        {
+          "action_type": "omni_purchase",
+          "value": "86"
+        },
+        {
+          "action_type": "initiate_checkout",
+          "value": "111"
+        },
+        {
+          "action_type": "purchase",
+          "value": "86"
+        }
+      ],
+      "date_start": "2020-07-21",
+      "date_stop": "2020-07-21"
+    }
+  ]}
+```
+
+If that looks right, then it's time to build our cloud function.
+
+Create a new folder called "get_facebook_data" and create a main.py file inside.
+
+```
+def main(request):
+    return "hello"
+
+if __name__ == '__main__':
+    from flask import Flask, request
+    app = Flask(__name__)
+    app.route('/')(lambda: main(request))
+    app.run(debug=True)
+```
+
+Now we want to exit the flask server
+`CTRL C`
+
+Then deactivate our virtual env
+`deactivate`
+
+Then create your new virtual env
+```
+cd functions
+python -m venv get_facebook_data_venv
+.\get_test_facebook_venv\Scripts\activate
+```
+
+Now let's install flask
+`pip install flask`
+
+as well as facebook's sdk
+`pip install facebook_business`
+
+Great, that should be the only requirements, so we can now pip freeze.
+`pip freeze > get_facebook_data/requirements.txt`
+
+To check it's working, run this:
+`python get_facebook_data/main.py`
+
+If you visit `http://127.0.0.1:5000/` you should see it says `hello`
+
+Now let's set up the app_id and secret - we'll add them to the function deployment later, but for testing we need to set them like this:
+
+`$env:FACEBOOK_APP_ID="123456"`
+`$env:FACEBOOK_APP_SECRET="abcdef"`
+
+Now set the file to pull from the os.environ to get the secret and id.
+`import os`
+then in the main function:
+```
+facebook_app_id = os.environ.get('FACEBOOK_APP_ID')
+facebook_app_secret = os.environ.get('FACEBOOK_APP_SECRET')
+```
+
+We also want to be able to return the data in JSON format, so add import jsonify from flask.
+`from flask import jsonify`
+
+```
+data = [{
+            "date": "2020-01-09",
+            "spend": "8000.00",
+            "clicks": "9900",
+            "impressions": "3050000",
+            "conversions": "1200"
+        }, {
+            "date": "2020-01-10",
+            "spend": "8200.00",
+            "clicks": "10000",
+            "impressions": "3500000",
+            "conversions": "1300"
+        }, {
+            "date": "2020-01-11",
+            "spend": "10000.00",
+            "clicks": "10900",
+            "impressions": "3200000",
+            "conversions": "1400"
+        }, {
+            "date": "2020-01-12",
+            "spend": "9000.00",
+            "clicks": "12000",
+            "impressions": "3700000",
+            "conversions": "1000"
+        }, {
+            "date": "2020-01-13",
+            "spend": "7000.00",
+            "clicks": "8000",
+            "impressions": "3000000",
+            "conversions": "800"
+        }, {
+            "date": "2020-01-14",
+            "spend": "8000.00",
+            "clicks": "9000",
+            "impressions": "3200000",
+            "conversions": "1000"
+        }, {
+            "date": "2020-01-15",
+            "spend": "11000.00",
+            "clicks": "12000",
+            "impressions": "4000000",
+            "conversions": "1500"
+        }]
+return jsonify(data)
+```
+
+Great so now test it's working.
+`python get_facebook_data/main.py`
+
+If we visit `http://localhost:5000/?access_token=testtoken123`
+
+We should see our hardcoded data.
+
+Now let's pull the real data from Facebook itself!
+
+First install the library by adding these imports.
+```
+from facebook_business.api import FacebookAdsApi
+from facebook_business.adobjects.adaccount import AdAccount
+from facebook_business.adobjects.adsinsights import AdsInsights
+```
+
+This line handles the initialization with the user's access token
+`FacebookAdsApi.init(facebook_app_id, facebook_app_secret, access_token)`
+
+We also need to grab the account id
+`account_id = request.args.get('account_id')`
+
+Then the meat of the function follows the same parameters as what we set up before in the open graph explorer.
+```
+# Make a call to the Facebook API
+my_account = AdAccount('act_'+account_id)
+fields = ['spend', 'impressions', 'inline_link_clicks', 'actions']
+params = {'level':'account', 'date_preset':'last_30d'}
+insights = my_account.get_insights(fields=fields, params=params)[0]
+data = dict(insights)
+```
+
+Let's give it a try.
+`python get_facebook_data/main.py`
+
+Visit `http://localhost:5000/?access_token=<token>&account_id=<account>`
+
+Just a couple more changes:
+- add the time increments
+- allow start and end dates

@@ -36,3 +36,7 @@ strong {
 .connector-title {
     margin-bottom: 1em !important;
 }
+.disconnect {
+    margin-top: 1em !important;
+    font-size: 0.7em;
+}

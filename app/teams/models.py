@@ -49,7 +49,6 @@ class Team():
 
 
 
-
 class Membership():
     def __init__(self, id_, user_id, team_id, role):
         self.id = id_
