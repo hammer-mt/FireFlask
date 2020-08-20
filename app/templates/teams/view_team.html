@@ -11,10 +11,18 @@
 <div class="row">
     {% if team.account_id %}
     <div class="col s12 m8 l7">
+        <a href="{{ url_for('charts.facebook_dashboard') }}">
+            <div class="card-panel">
+                <i class="fa fa-facebook-f fa-lg blue-text"></i>
+                &nbsp;Go to Facebook dashboard >
+            </div>
+        </a>    
+    </div>
+    <div class="col s12 m8 l7">
         <a href="{{ url_for('charts.dashboard') }}">
             <div class="card-panel">
                 <i class="material-icons inline-icon">insert_chart</i>
-                &nbsp;Go to dashboard >
+                &nbsp;Go to Testing dashboard >
             </div>
         </a>    
     </div>
@@ -53,6 +61,10 @@
                     <tr>
                         <td>Account ID</td>
                         <td>{{ team.account_id }}</td>
+                    </tr>
+                    <tr>
+                        <td>Conversion Event</td>
+                        <td>{{ team.conversion_event }}</td>
                     </tr>                
                 </tbody>
             </table>

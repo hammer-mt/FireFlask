@@ -1,0 +1,74 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+
+<div class="row">
+    <div class="input-field col s4">
+        <h2>Facebook Dashboard</h2>
+    </div>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        
+        <div class="input-field col s3 date-field">
+            {{ form.start_date(class_='validate datepicker', type="text") }}
+            {{ form.start_date.label() }}
+        </div>
+        <div class="input-field col s3 date-field">
+            {{ form.end_date(class_='validate datepicker', type="text") }}
+            {{ form.end_date.label() }}
+        </div>
+        <div id="run-button" class="col s2 right-align">
+            <button type="submit" name="btn" class="waves-effect waves-light btn red">
+                RUN QUERY
+            </button>
+        </div>
+    </form>
+    
+
+</div>
+
+
+
+
+<div class="row">
+    <!-- Metric Score Card -->
+    <div class="col s4">
+        {% include 'charts/_card_spend.html' %}
+    </div>
+
+    <!-- Metric Score Card -->
+    <div class="col s4">
+        {% include 'charts/_card_conversions.html' %}
+    </div>
+
+    <!-- Metric Score Card -->
+    <div class="col s4">
+        {% include 'charts/_card_cpa.html' %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Chart JS Bar Chart -->
+    <div class="col s12 m6 l6">
+        {% include 'charts/_bar.html' %}
+    </div>
+
+    <!-- Chart JS line chart -->
+    <div class="col s12 m6 l6">
+        {% include 'charts/_line_cpa.html' %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Data in table -->
+    <div class="col s12 m8">
+        {% include 'charts/_table.html' %}
+    </div>
+
+    <!-- Donut chart -->
+    <div class="col s6 m4">
+        {% include 'charts/_donut.html' %}
+    </div>
+</div>
+
+{% endblock %}

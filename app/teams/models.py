@@ -3,11 +3,12 @@ from firebase_admin import auth
 
             
 class Team():
-    def __init__(self, id_, name, account_id, facebook_token=None):
+    def __init__(self, id_, name, account_id, conversion_event, facebook_token=None):
         self.id = id_
         self.name = name
         self.account_id = account_id
         self.facebook_token = facebook_token
+        self.conversion_event = conversion_event
     
     @staticmethod
     def get(team_id):
@@ -16,6 +17,7 @@ class Team():
             id_=team_id, 
             name=team_data['name'],
             account_id=team_data.get('account_id'),
+            conversion_event=team_data.get('conversion_event'),
             facebook_token=team_data.get('facebook_token')
         )
         return team
@@ -31,14 +33,16 @@ class Team():
         team = Team.get(team_id)
         return team
 
-    def update(self, name, account_id):
+    def update(self, name, account_id, conversion_event):
         pyr_db.child('teams').child(self.id).update({
             "name": name,
-            "account_id":account_id 
+            "account_id": account_id,
+            "conversion_event": conversion_event 
         })
 
         self.name = name
         self.account_id = account_id
+        self.conversion_event = conversion_event
 
     def facebook_connect(self, token):
         pyr_db.child('teams').child(self.id).update({

@@ -23,6 +23,13 @@
                     <span class="helper-text" data-error="[{{ error }}]" data-success=""></span>
                     {% endfor %}
                 </p>
+                <p class="input-field">
+                    {{ form.conversion_event.label }}<br>
+                    {{ form.conversion_event(size=32, class_="validate") }}<br>
+                    {% for error in form.conversion_event.errors %}
+                    <span class="helper-text" data-error="[{{ error }}]" data-success=""></span>
+                    {% endfor %}
+                </p>
                 <p class="right-align">
                     <button type="submit" name="btn" class="waves-effect waves-light btn blue">
                     UPDATE

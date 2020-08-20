@@ -880,13 +880,13 @@ Now let's accept these dates via the function params.
 Grab the variables from the request.
 ```
 date_start = request.args.get('date_start')
-date_stop = request.args.get('date_stop')
+date_stop = request.args.get('date_end')
 ```
 
 Then insert them:
-`'time_range': {'since': date_start, 'until': date_stop}`
+`'time_range': {'since': date_start, 'until': date_end}`
 
-Visit `http://localhost:5000/?access_token=<token>&account_id=<account>&date_start=2020-01-01&date_stop=2020-01-20`
+Visit `http://localhost:5000/?access_token=<token>&account_id=<account>&date_start=2020-01-01&date_end=2020-01-20`
 
 Perfect, but the data is coming out a little different than we wanted. Remember the format we had before?
 
@@ -930,7 +930,7 @@ else:
 data.append(format_data)
 ```
 
-Visit `http://localhost:5000/?access_token=<token>&account_id=<account>&date_start=2020-01-01&date_stop=2020-01-20&conversion_event=purchase`
+Visit `http://localhost:5000/?access_token=<token>&account_id=<account>&date_start=2020-01-01&date_end=2020-01-20&conversion_event=purchase`
 
 It's also worth testing it with a conversion event that doesn't exist, just to check it correctly gives you 0.
 
@@ -938,7 +938,7 @@ Now let's deploy this with the environment variables. Note we changed the functi
 
 `gcloud beta functions deploy get_facebook_data --trigger-http --runtime python37 --project fireflask-ef97c --source C:\Users\Hammer\Documents\Projects\FireFlask\functions\get_facebook_data --allow-unauthenticated --entry-point=main --update-env-vars APP_ID=123456,APP_SECRET=abcdef`
 
-Once we run this, we should be able to test it by visiting `https://us-central1-fireflask-ef97c.cloudfunctions.net/get_facebook_data?access_token=<token>&account_id=<account>&date_start=2020-01-01&date_stop=2020-01-20&conversion_event=purchase`
+Once we run this, we should be able to test it by visiting `https://us-central1-fireflask-ef97c.cloudfunctions.net/get_facebook_data?access_token=<token>&account_id=<account>&date_start=2020-01-01&date_end=2020-01-20&conversion_event=purchase`
 
 Now we're done testing the function, we can move on back to integrating it with our dashboard.
 
@@ -946,5 +946,384 @@ Now we're done testing the function, we can move on back to integrating it with 
 `deactivate` to exit the venv
 `cd ..` to get back to the right folder
 `venv\Scripts\activate` to reactivate your main venv
+
+Copy the dashboard function in routes and swap out the name to this:
+```
+@bp.route('/facebook', methods=['GET', 'POST'])
+@login_required
+def facebook_dashboard():
+```
+
+Change the cloud function:
+`url = "https://us-central1-fireflask-ef97c.cloudfunctions.net/get_facebook_data"`
+
+Hard code the conversion event for now:
+`"conversion_event": "purchase"`
+
+Then pull the token from team
+`"access_token": team.facebook_token,`
+
+Then let's test it out
+`flask run --cert=adhoc`
+
+Remember to update your account id and get a fresh access token.
+
+Then visit `https://127.0.0.1:5000/charts/facebook`
+
+Let's tidy this up a bit to make it more useful.
+
+Add conversions and cpa to the facebook dashboard route, and make it render a different dashboard template.
+
+```
+spend = sum([float(row['spend']) for row in data])
+conversions = sum([float(row['conversions']) for row in data])
+cpa = round(spend / conversions, 2)
+
+return render_template(
+    'charts/facebook_dashboard.html', 
+    title='Facebook Dashboard', 
+    data=data, 
+    spend=spend,
+    conversions=conversions,
+    cpa=cpa, 
+    form=form, 
+    account_id=account_id
+)
+```
+
+Create that new facebook_dashboard.html file and change the cards to 
+```
+<div class="row">
+    <!-- Metric Score Card -->
+    <div class="col s4">
+        {% include 'charts/_card_spend.html' %}
+    </div>
+
+    <!-- Metric Score Card -->
+    <div class="col s4">
+        {% include 'charts/_card_conversions.html' %}
+    </div>
+
+    <!-- Metric Score Card -->
+    <div class="col s4">
+        {% include 'charts/_card_cpa.html' %}
+    </div>
+</div>
+```
+
+Then create a new card file for each, like this:
+```
+<div class="card">
+    <div class="card-content">
+        <p>CONVERSIONS</p>
+        <span class="card-title grey-text text-darken-4">
+            {{ "{:,.0f}".format(conversions) }}
+        </span>
+    </div>
+</div>
+```
+
+You should also change the line chart to 
+
+```
+<!-- Chart JS line chart -->
+<div class="col s12 m6 l6">
+    {% include 'charts/_line_cpa.html' %}
+</div>
+```
+
+This is how it'd look with modifications to show CPA instead of spend.
+```
+<div class="card-panel">
+    <canvas id="lineChart" width="200" height="100"></canvas>
+</div>
+
+{% block javascript %}
+<script>
+    var chartData = chartData || JSON.parse('{{ data|tojson }}');
+    var data = [];
+    var labels = [];
+    for (i=0; i<chartData.length; i++) {
+        var spend = chartData[i]['spend']
+        var conversions = chartData[i]['conversions']
+
+        data.push(spend/conversions);
+        labels.push(chartData[i]['date']);
+    }
+    
+    var ctx = document.getElementById('lineChart').getContext('2d');
+    var lineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'CPA',
+                data: data,
+                fill: true,
+                lineTension: 0.1,
+                backgroundColor: "rgba(75,192,192,0.4)",
+                borderColor: "rgba(75,192,192,1)",
+                borderCapStyle: 'butt',
+                borderDash: [],
+                borderDashOffset: 0.0,
+                borderJoinStyle: 'miter',
+                pointBorderColor: "rgba(75,192,192,1)",
+                pointBackgroundColor: "#fff",
+                pointBorderWidth: 1,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: "rgba(75,192,192,1)",
+                pointHoverBorderColor: "rgba(220,220,220,1)",
+                pointHoverBorderWidth: 2,
+                pointRadius: 1,
+                pointHitRadius: 10,
+                spanGaps: false
+            }]
+        },
+        options: {
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true
+                    }
+                }]
+            }
+        }
+    });
+    
+</script>
+{% endblock %}
+```
+
+We should also add a link through to the Facebook dashboard in the teams view page.
+
+```
+<div class="col s12 m8 l7">
+    <a href="{{ url_for('charts.facebook_dashboard') }}">
+        <div class="card-panel">
+            <i class="fa fa-facebook-f fa-lg blue-text"></i>
+            &nbsp;Go to Facebook dashboard >
+        </div>
+    </a>    
+</div>
+```
+
+A couple of final bits - let's add the conversion event to the team page.
+
+First add it to the model:
+```
+class Team():
+    def __init__(self, id_, name, account_id, conversion_event, facebook_token=None):
+        self.id = id_
+        self.name = name
+        self.account_id = account_id
+        self.facebook_token = facebook_token
+        self.conversion_event = conversion_event
+    
+    @staticmethod
+    def get(team_id):
+        team_data = pyr_db.child('teams').child(team_id).get().val()
+        team = Team(
+            id_=team_id, 
+            name=team_data['name'],
+            account_id=team_data.get('account_id'),
+            conversion_event=team_data.get('conversion_event'),
+            facebook_token=team_data.get('facebook_token')
+        )
+        return team
+
+    @staticmethod
+    def create(name):
+        team_res = pyr_db.child('teams').push({
+            "name": name
+        })
+        team_id = team_res['name'] # api sends id back as 'name'
+        print('Sucessfully created new team: {0}'.format(team_id))
+
+        team = Team.get(team_id)
+        return team
+
+    def update(self, name, account_id, conversion_event):
+        pyr_db.child('teams').child(self.id).update({
+            "name": name,
+            "account_id": account_id,
+            "conversion_event": conversion_event 
+        })
+
+        self.name = name
+        self.account_id = account_id
+        self.conversion_event = conversion_event
+
+    def facebook_connect(self, token):
+        pyr_db.child('teams').child(self.id).update({
+            "facebook_token": token,
+        })
+
+        self.facebook_token = token
+```
+
+Add it to the route.
+```
+@bp.route('/<team_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_team(team_id):
+
+    role = Membership.user_role(current_user.id, team_id)
+    if role not in ["ADMIN", "OWNER"]:
+        abort(401, "You don't have access to edit this team.")
+
+    form = TeamForm()
+
+    team = Team.get(team_id)
+
+    if form.validate_on_submit():
+        name = form.name.data
+        account_id = form.account_id.data
+        conversion_event = form.conversion_event.data
+
+        #edit a team
+        try:
+            team.update(name, account_id, conversion_event)
+
+            # Update successful
+            flash('Team {}, updated with name={}'.format(
+                 team.id, team.name), 'teal')
+
+            return redirect(url_for('teams.view_team', team_id=team.id))
+
+        except Exception as e:
+            # Update unsuccessful
+            flash("Error: {}".format(e), 'red')
+
+    form.name.data = team.name
+    form.account_id.data = team.account_id
+    form.conversion_event.data = team.conversion_event
+        
+    return render_template('teams/edit_team.html', title='Edit Team', form=form, 
+        team=team)
+```
+
+Then to view team.
+```
+<tr>
+    <td>Conversion Event</td>
+    <td>{{ team.conversion_event }}</td>
+</tr> 
+```
+
+Then we've got the edit page.
+```
+<p class="input-field">
+    {{ form.conversion_event.label }}<br>
+    {{ form.conversion_event(size=32, class_="validate") }}<br>
+    {% for error in form.conversion_event.errors %}
+    <span class="helper-text" data-error="[{{ error }}]" data-success=""></span>
+    {% endfor %}
+</p>
+```
+
+Finally the form.
+```
+conversion_event = StringField('Conversion Event')
+```
+
+Then you just need to update the route to accept the conversion event from the team in the session.
+
+```
+if not session.get('team_id'):
+    # No team selected
+    flash("Please select a team", 'orange')
+    return redirect(url_for('teams.list_teams'))
+else:
+    team = Team.get(session.get('team_id'))
+    account_id = team.account_id
+    conversion_event = team.conversion_event
+
+    if not account_id:
+        # No account id for team
+        flash("Please ask account owner to update Account ID", 'orange')
+        return redirect(url_for('teams.edit_team', team_id=team.id))
+    
+    if not conversion_event:
+        # No account id for team
+        flash("Please ask account owner to update Conversion Event", 'orange')
+        return redirect(url_for('teams.edit_team', team_id=team.id))
+
+# Run the cloud function
+url = "https://us-central1-fireflask-ef97c.cloudfunctions.net/get_facebook_data"
+payload = {
+    "access_token": team.facebook_token,
+    "account_id": account_id,
+    "date_start": start_date,
+    "date_end": end_date,
+    "conversion_event": conversion_event
+```
+
+Also let's wrap the whole call in a try catch, so the application doesn't just quit on us when something goes wrong.
+
+```
+ # Run the cloud function
+try:
+    url = "https://us-central1-fireflask-ef97c.cloudfunctions.net/get_facebook_data"
+    payload = {
+        "access_token": team.facebook_token,
+        "account_id": account_id,
+        "date_start": start_date,
+        "date_end": end_date,
+        "conversion_event": conversion_event
+        }
+    response = requests.get(url, params=payload)
+    data = json.loads(response.text)
+except Exception as e:
+        # No account id for team
+    flash(f"Error: {e}", 'red')
+    flash("Make sure Account ID, Conversion Event are correct", 'orange')
+    return redirect(url_for('teams.edit_team', team_id=team.id))
+```
+
+One more thing to do - you may have noticed that the access token doesn't last very long, just a few hours.
+
+You can exchange the token for a long-lived token, which lets you query for 60 days (or longer, because it's refreshed on every call).
+
+More info can be found here: [https://developers.facebook.com/docs/facebook-login/access-tokens/refreshing/](https://developers.facebook.com/docs/facebook-login/access-tokens/refreshing/)
+
+The API call goes like this:
+`https://graph.facebook.com/{graph-api-version}/oauth/access_token?grant_type=fb_exchange_token&client_id={app-id}&client_secret={app-secret}&fb_exchange_token={your-access-token}`
+
+So in our routes file let's do this
+
+```
+# Get the temp token
+temp_token_response = requests.post(token_url)
+
+# Parse the temp token
+print("temp token dump:", json.dumps(temp_token_response.json()))
+
+temp_token = temp_token_response.json().get('access_token')
+
+# Exchange for long lived token
+grant_param = "?grant_type=fb_exchange_token"
+client_param = "&client_id=" + Config.CONNECTORS['facebook_app_id']
+secret_param = "&client_secret=" + Config.CONNECTORS['facebook_app_secret']
+token_param = "&fb_exchange_token=" + temp_token
+
+exchange_url = Config.CONNECTORS['facebook_token_endpoint'] + grant_param + client_param + secret_param + token_param
+
+# Get the token
+token_response = requests.post(exchange_url)
+
+# Parse the token
+print("token dump:", json.dumps(token_response.json()))
+
+token = token_response.json().get('access_token')
+
+# Save the token
+team = Team.get(session.get('team_id'))
+team.facebook_connect(token)
+```
+
+If you copy the access token from the database and run it through facebook's debugger, you should see that it expires in 2 months.
+`https://developers.facebook.com/tools/debug/accesstoken`
+
+There's obviously more we could do here, and we could run through adding more connectors to the page, but for now this is a good stopping point, and we can now access really anything we want in Facebook.
 
 

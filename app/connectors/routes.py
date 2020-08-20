@@ -56,8 +56,24 @@ def callback(platform):
 
         print("trying url: ", token_url)
 
+        # Get the temp token
+        temp_token_response = requests.post(token_url)
+
+        # Parse the temp token
+        print("temp token dump:", json.dumps(temp_token_response.json()))
+
+        temp_token = temp_token_response.json().get('access_token')
+
+        # Exchange for long lived token
+        grant_param = "?grant_type=fb_exchange_token"
+        client_param = "&client_id=" + Config.CONNECTORS['facebook_app_id']
+        secret_param = "&client_secret=" + Config.CONNECTORS['facebook_app_secret']
+        token_param = "&fb_exchange_token=" + temp_token
+        
+        exchange_url = Config.CONNECTORS['facebook_token_endpoint'] + grant_param + client_param + secret_param + token_param
+
         # Get the token
-        token_response = requests.post(token_url)
+        token_response = requests.post(exchange_url)
 
         # Parse the token
         print("token dump:", json.dumps(token_response.json()))

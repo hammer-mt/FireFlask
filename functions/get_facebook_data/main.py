@@ -9,7 +9,7 @@ def main(request):
     account_id = request.args.get('account_id')
 
     date_start = request.args.get('date_start')
-    date_stop = request.args.get('date_stop')
+    date_end = request.args.get('date_end')
 
     conversion_event = request.args.get('conversion_event')
 
@@ -26,7 +26,7 @@ def main(request):
     fields = ['spend', 'impressions', 'inline_link_clicks', 'actions']
     params = {
         'level': 'account', 
-        'time_range': {'since': date_start, 'until': date_stop}, 
+        'time_range': {'since': date_start, 'until': date_end}, 
         'time_increment': 1
         }
     

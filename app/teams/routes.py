@@ -85,10 +85,11 @@ def edit_team(team_id):
     if form.validate_on_submit():
         name = form.name.data
         account_id = form.account_id.data
+        conversion_event = form.conversion_event.data
 
         #edit a team
         try:
-            team.update(name, account_id)
+            team.update(name, account_id, conversion_event)
 
             # Update successful
             flash('Team {}, updated with name={}'.format(
@@ -102,6 +103,7 @@ def edit_team(team_id):
 
     form.name.data = team.name
     form.account_id.data = team.account_id
+    form.conversion_event.data = team.conversion_event
         
     return render_template('teams/edit_team.html', title='Edit Team', form=form, 
         team=team)
