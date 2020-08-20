@@ -860,3 +860,91 @@ Visit `http://localhost:5000/?access_token=<token>&account_id=<account>`
 Just a couple more changes:
 - add the time increments
 - allow start and end dates
+
+To allow time increments, add this to the params
+`params = {'level':'account', 'date_preset':'last_30d', 'time_increment':1}`
+
+Then we need to loop through the cursor object Facebook returns, to get a list of dictionaries.
+
+```
+data = []
+for day in insights:
+    data.append(dict(day))
+```
+
+Then to choose date range, we need to add this to the params.
+`'time_range': {'since': '2019-01-01', 'until': '2019-01-05'}`
+
+Now let's accept these dates via the function params.
+
+Grab the variables from the request.
+```
+date_start = request.args.get('date_start')
+date_stop = request.args.get('date_stop')
+```
+
+Then insert them:
+`'time_range': {'since': date_start, 'until': date_stop}`
+
+Visit `http://localhost:5000/?access_token=<token>&account_id=<account>&date_start=2020-01-01&date_stop=2020-01-20`
+
+Perfect, but the data is coming out a little different than we wanted. Remember the format we had before?
+
+[{
+    "date": "2020-01-09",
+    "spend": "8000.00",
+    "clicks": "9900",
+    "impressions": "3050000",
+    "conversions": "1200"
+}
+
+So let's add a mapping to make that match, so we won't have to change our frontend.
+
+```
+for day in insights:
+    format_data = {}
+    format_data['date'] = day['date_start']
+    format_data['impressions'] = day['impressions']
+    format_data['clicks'] = day['inline_link_clicks']
+    format_data['spend'] = day['spend']
+    format_data['conversions'] = day['actions']
+    data.append(format_data)
+```
+
+But we also need a way to condense actions down to just the one conversion metric we care about.
+
+So let's pass a conversion event to this function too.
+`conversion_event = request.args.get('conversion_event')`
+
+Then we need to use it to process the actions dictionary and choose the right event.
+```
+# Pull out conversion metric
+conversions = [action.get('value') for action in day['actions'] if action.get('action_type') == conversion_event]
+
+if conversions:
+    format_data['conversions'] = conversions[0]
+else:
+    format_data['conversions'] = "0"
+
+# Append to the data list
+data.append(format_data)
+```
+
+Visit `http://localhost:5000/?access_token=<token>&account_id=<account>&date_start=2020-01-01&date_stop=2020-01-20&conversion_event=purchase`
+
+It's also worth testing it with a conversion event that doesn't exist, just to check it correctly gives you 0.
+
+Now let's deploy this with the environment variables. Note we changed the function name to main now so we need to update the entry point also.
+
+`gcloud beta functions deploy get_facebook_data --trigger-http --runtime python37 --project fireflask-ef97c --source C:\Users\Hammer\Documents\Projects\FireFlask\functions\get_facebook_data --allow-unauthenticated --entry-point=main --update-env-vars APP_ID=123456,APP_SECRET=abcdef`
+
+Once we run this, we should be able to test it by visiting `https://us-central1-fireflask-ef97c.cloudfunctions.net/get_facebook_data?access_token=<token>&account_id=<account>&date_start=2020-01-01&date_stop=2020-01-20&conversion_event=purchase`
+
+Now we're done testing the function, we can move on back to integrating it with our dashboard.
+
+`CTRL C` to exit the flask server
+`deactivate` to exit the venv
+`cd ..` to get back to the right folder
+`venv\Scripts\activate` to reactivate your main venv
+
+
