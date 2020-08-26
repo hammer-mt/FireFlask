@@ -40,7 +40,7 @@ def dashboard():
             return redirect(url_for('teams.edit_team', team_id=team.id))
     
     # Run the cloud function
-    url = "https://us-central1-fireflask-ef97c.cloudfunctions.net/get_test_data"
+    url = f"https://us-central1-{Config.DB['projectId']}.cloudfunctions.net/get_test_data"
     payload = {
         "access_token": Config.ACCESS_TOKEN,
         "account_id": account_id,
@@ -93,7 +93,7 @@ def facebook_dashboard():
     
     # Run the cloud function
     try:
-        url = "https://us-central1-fireflask-ef97c.cloudfunctions.net/get_facebook_data"
+        url = f"https://us-central1-{Config.DB['projectId']}.cloudfunctions.net/get_facebook_data"
         payload = {
             "access_token": team.facebook_token,
             "account_id": account_id,
@@ -112,7 +112,10 @@ def facebook_dashboard():
 
     spend = sum([float(row['spend']) for row in data])
     conversions = sum([float(row['conversions']) for row in data])
-    cpa = round(spend / conversions, 2)
+    if conversions:
+        cpa = round(spend / conversions, 2)
+    else:
+        cpa = 0
 
     return render_template(
         'charts/facebook_dashboard.html', 

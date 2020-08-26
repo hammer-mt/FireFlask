@@ -148,4 +148,5 @@ firebase-private-key.json
 env.yaml
 
 # Cloud function env
-*venv/
+venv/
+*_venv/

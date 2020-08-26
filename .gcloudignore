@@ -26,4 +26,4 @@ LICENSE
 
 # Get rid of venvs
 venv/
-*venv/
+*_venv/

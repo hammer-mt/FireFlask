@@ -936,7 +936,7 @@ It's also worth testing it with a conversion event that doesn't exist, just to c
 
 Now let's deploy this with the environment variables. Note we changed the function name to main now so we need to update the entry point also.
 
-`gcloud beta functions deploy get_facebook_data --trigger-http --runtime python37 --project fireflask-ef97c --source C:\Users\Hammer\Documents\Projects\FireFlask\functions\get_facebook_data --allow-unauthenticated --entry-point=main --update-env-vars APP_ID=123456,APP_SECRET=abcdef`
+`gcloud beta functions deploy get_facebook_data --trigger-http --runtime python37 --project fireflask-ef97c --source C:\Users\Hammer\Documents\Projects\FireFlask\functions\get_facebook_data --allow-unauthenticated --entry-point=main --update-env-vars FACEBOOK_APP_ID=123456,FACEBOOK_APP_SECRET=abcdef`
 
 Once we run this, we should be able to test it by visiting `https://us-central1-fireflask-ef97c.cloudfunctions.net/get_facebook_data?access_token=<token>&account_id=<account>&date_start=2020-01-01&date_end=2020-01-20&conversion_event=purchase`
 
