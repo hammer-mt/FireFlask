@@ -241,14 +241,15 @@ then run flask like this:
 `flask run --cert=adhoc`
 
 Check everything is as you expect, and make any customizations for your use case as necessary.
+- Visit the homepage
 - Sign up and sign out
 - Log in and edit your profile
 - Create a team
 - Add account id and conversion event to team
-- Connect Facebook
+- Connect Facebook ads
 - Invite a user to a team
 - Log in as invited user
-- Visit the dashboard
+- Visit the generic dashboard
 - Visit the Facebook dashboard
 
 Once you're ready to deploy to production on Google App Engine, follow these steps:
@@ -265,7 +266,6 @@ env_variables:
 ```
 
 Now is a good time to check into github and make sure none of your sensitive passowrds are there.
-
 `git status`
 
 If you do see something in there that shouldn't be, like an env folder or something, remove it like this:
@@ -280,7 +280,6 @@ Now you can commit:
 `git push`
 
 Now set the default project to work on.
-
 `gcloud config set project my-project-12435`
 
 Now deploy:
