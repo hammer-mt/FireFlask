@@ -150,3 +150,6 @@ env.yaml
 # Cloud function env
 venv/
 *_venv/
+
+# Pytest config
+pytest.ini

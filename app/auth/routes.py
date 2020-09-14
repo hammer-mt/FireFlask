@@ -1,5 +1,5 @@
 from flask import render_template, flash, redirect, url_for, session, escape, abort
-from flask_login import current_user, login_required
+from flask_login import current_user, login_required, login_user, logout_user
 from app.auth.forms import SignInForm, SignUpForm, ResetPasswordForm, EditProfileForm, UploadPhotoForm
 from app.auth import bp
 from app import login_manager
@@ -22,7 +22,8 @@ def sign_in():
 
         #authenticate the user
         try:
-            User.auth(email, password)
+            user = User.auth(email, password)
+            login_user(user, remember=True)
 
             # Sign in successful
             flash('User {}, logged in with id={}'.format(
@@ -49,7 +50,8 @@ def sign_up():
 
         #authenticate a user
         try:
-            User.create(name, email, password)
+            user = User.create(name, email, password)
+            login_user(user, remember=True)
 
             # Sign up successful
             flash('User {}, created with id={}'.format(
@@ -72,7 +74,7 @@ def sign_up():
 @login_required
 def sign_out():
     user_id = current_user.id # save before user logged out
-    User.logout()
+    logout_user()
     flash("User {} signed out".format(user_id), 'blue')
     return redirect(url_for("main.index"))
 

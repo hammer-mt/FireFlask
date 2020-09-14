@@ -237,6 +237,9 @@ Great, everything should work. Feel free to delete this readme.md, the todo.md, 
 To run the project locally, first reactivate your main script
 `venv\Scripts\activate` to reactivate your main venv
 
+To run the tests, use this command:
+`pytest -vv -s`
+
 then run flask like this:
 `flask run --cert=adhoc`
 

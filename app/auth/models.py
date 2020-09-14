@@ -1,7 +1,6 @@
 from flask_login import UserMixin
 from app import pyr_auth, pyr_store, pyr_db
 from firebase_admin import auth
-from flask_login import login_user, logout_user
 import os
 import tempfile
 from hashlib import md5
@@ -56,7 +55,6 @@ class User(UserMixin):
             created=firebase_user.user_metadata.creation_timestamp,
             photo_url=firebase_user.photo_url
         )
-        login_user(flask_user, remember=True)
         return flask_user
 
     @staticmethod
@@ -82,12 +80,7 @@ class User(UserMixin):
             created=pyr_user_info['users'][0]['createdAt'],
             photo_url=firebase_user.photo_url
         )
-        login_user(flask_user, remember=True)
         return flask_user
-
-    @staticmethod
-    def logout():
-        logout_user()
 
     @staticmethod
     def reset(email):
@@ -194,6 +187,9 @@ class User(UserMixin):
             photo_url=""
         )
         return flask_user
+
+    def destroy(self):
+        auth.delete_user(self.id)
 
 
 

@@ -8,7 +8,7 @@
 - 19/ Static - Creating a blog with static pages
 - 20/ AJAX - Improving UX with AJAX
 - 21/ React - Implementing React components
-- 22/ Pipelines - Adding more data pipeline connectors
+- 22/ Features - Adding more features to our product
 
 
 
