@@ -22,6 +22,7 @@ We'll be piecing together our testing code from various resources across the web
 - [FUNCTION TEMPLATE](https://github.com/mjt145/function)
 - [Testing a Flask Application using pytest](https://www.patricksoftwareblog.com/testing-a-flask-application-using-pytest/)
 - [Test a Flask App with Selenium WebDriver - Part 1](https://scotch.io/tutorials/test-a-flask-app-with-selenium-webdriver-part-1)
+- [Packaging a python library](https://blog.ionelmc.ro/2014/05/25/python-packaging/#the-structure)
 
 #### Goals of testing
 - Tests should run fast
@@ -525,4 +526,153 @@ def test_membership_invite(team, user, password):
 ```
 
 There are obviously more comprehensive tests we can run on users and members, but for now this is good enough to move on to get test coverage on our cloud functions.
+
+- ~~Visit the homepage~~
+- ~~Sign up~~ and sign out
+- ~~Log in and edit your profile~~
+- ~~Create a team~~
+- ~~Add account id and conversion event to team~~
+- Connect Facebook ads
+- ~~Invite a user to a team~~
+- ~~Log in as invited user~~
+- Visit the generic dashboard
+- Visit the Facebook dashboard
+
+Because of the way our application is built, the most important functionality always depends on cloud functions. So learning to test them is the key to most of the future testing we need to write. 
+
+Yes we'll eventually want to write tests for all the smaller components of our login etc, but there won't be much innovation there, so we hopefully won't be as much at risk of it breaking as we would be with our functions.
+
+First let's test our generic cloud `get_test_data` function, as that doesn't have any major needs with regards to connnecting to a third party API at all, and learning to test it will help us test the Facebook function. 
+
+First let's get out of our environment and into the function environment.
+`deactivate`
+`functions\get_test_data_venv\Scripts\activate`
+
+We need to add the environment variables to our pytest.ini (it doesn't matter what these variables are, this is just a test function it doesn't validate them).
+```
+    APP_ID=123456
+    APP_SECRET=abcdef
+```
+
+Also make sure to pip install the following
+`pip install pytest`
+`pip install pytest-env`
+`pip freeze > functions\get_test_data\requirements.txt`
+
+We also have to add them to the environment for testing, then we can run the function to see how it works.
+`$env:APP_ID="123456"`
+`$env:APP_SECRET="abcdef"`
+`python functions/get_test_data/main.py`
+
+Then visit
+`http://localhost:5000/?access_token=Mike&account_id=123456789&date_start=2020-01-01&date_end=2020-01-07`
+
+And you should see the data. We programmed this to use a random seed so that the data is random, but always the same for the same call to the same parameters. So we should be able to test this properly. 
+
+Grab the raw JSON response and save it somewhere to use later in your test.
+
+Create a `test_get_test_data.py` file in your tests folder.
+
+Add these imports:
+```
+import pytest
+from functions.get_test_data.main import main
+from flask import Flask, request
+import json
+```
+
+Now create a tester client as a fixture to use.
+```
+@pytest.fixture()
+def func_tester():
+    app = Flask(__name__)
+    app.config['TESTING'] = True
+    app.route('/')(lambda: main(request))
+
+    with app.app_context():
+        func_tester = app.test_client()
+        yield func_tester
+```
+
+Now we have what we need to write the test. First let's just check it comes back with a 200.
+
+```
+def test_get_test_data(func_tester):
+    response = func_tester.get('/', query_string=dict(access_token="Mike", account_id="123456789", date_start="2020-01-01", date_end="2020-01-07"))
+    assert response.status_code == 200
+```
+
+Then run 
+`pytest -vv -k _get`
+
+To see it (hopefully) working.
+
+Next let's add our test case data from before and test it's working.
+
+```
+def test_get_test_data(func_tester):
+    response = func_tester.get('/', query_string=dict(access_token="Mike", account_id="123456789", date_start="2020-01-01", date_end="2020-01-07"))
+    assert response.status_code == 200
+    test_data = [
+        {
+            "clicks": "6633.75", 
+            "conversions": "804.09", 
+            "date": "2020-01-01", 
+            "impressions": "2043732.45", 
+            "spend": "5360.61"
+        }, 
+        {
+            "clicks": "8884.46", 
+            "conversions": "1076.9", 
+            "date": "2020-01-02", 
+            "impressions": "2737130.16", 
+            "spend": "7179.36"
+        }, 
+        {
+            "clicks": "10416.11", 
+            "conversions": "1262.56", 
+            "date": "2020-01-03", 
+            "impressions": "3209004.38", 
+            "spend": "8417.06"
+        }, 
+        {
+            "clicks": "11395.85", 
+            "conversions": "1381.32", 
+            "date": "2020-01-04", 
+            "impressions": "3510843.23", 
+            "spend": "9208.77"
+        }, 
+        {
+            "clicks": "14497.23", 
+            "conversions": "1757.24", 
+            "date": "2020-01-05", 
+            "impressions": "4466318.22", 
+            "spend": "11714.93"
+        }, 
+        {
+            "clicks": "8785.17", 
+            "conversions": "1064.87", 
+            "date": "2020-01-06", 
+            "impressions": "2706542.27", 
+            "spend": "7099.13"
+        }, 
+        {
+            "clicks": "14264.91", 
+            "conversions": "1729.08", 
+            "date": "2020-01-07", 
+            "impressions": "4394744.42", 
+            "spend": "11527.2"
+        }]
+    assert json.loads(response.data) == test_data
+```
+
+Now that this works, we know how to test cloud functions locally.
+
+If we wanted to test the Facebook function, we could do this via Mocks, where we mimic the response data you'd expect to get from Facebook. However in this case it's some strange 'cursor' object which I don't know how to convert into a real python object, except by doing the exact data transformation we'd be testing for in our test! 
+
+So essentially in this case test coverage would be kind of useless for us. It would be adding overhead with no real gain, since any bug in my code for the function, would also show up one to one as a bug in the way I implement the test. 
+
+It does make sense to add test cases for this eventually, and learn how to do mocks etc, but if we want to move fast we have to think carefully about whether the increase in relaibility and predictability (likely a small improvement in this case, if at all) would ultimately be worth the research time needed (which could be hours, maybe days, it's hard to know when solving a new challenge).
+
+For now that concludes our tutorial on testing - you have most of the building blocks for building your own tests, and definitely feel free to submit a pull request with the tests you add.
 
