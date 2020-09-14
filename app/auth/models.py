@@ -64,10 +64,10 @@ class User(UserMixin):
 
         is_verified = pyr_user_info['users'][0]['emailVerified']
 
-        if not is_verified:
-            # send verification
-            pyr_auth.send_email_verification(pyr_user['idToken'])
-            print("Sent email verification")
+        # if not is_verified:
+        #     # send verification
+        #     pyr_auth.send_email_verification(pyr_user['idToken'])
+        #     print("Sent email verification")
 
         firebase_user = auth.get_user(pyr_user['localId'])
 
@@ -190,6 +190,7 @@ class User(UserMixin):
 
     def destroy(self):
         auth.delete_user(self.id)
+        print(f"Deleted user {self.id}")
 
 
 

@@ -1,15 +1,18 @@
-import string
-import random
 from app.auth.models import User
-from flask_login import current_user, login_user
 
+def test_sign_up(user):
+    assert user.email == 'test@example.com'
 
-def test_sign_up(tester):
-    name = 'tester'
-    email = 'test@example.com'
-    password = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(7))
-    print(name, email, password)
-    user = User.create(name, email, password)
-    login_user(user)
-    assert current_user.email == email
-    user.destroy()
+def test_sign_in(user, password):
+    user = User.auth('test@example.com', password)
+    assert user.email == 'test@example.com'
+
+def test_edit_profile(user):
+    user.edit('tester 2', 'test_2@example.com', 'QA Tester')
+
+    user = User.get(user.id)
+    meta = user.get_meta()
+
+    assert user.name == 'tester 2'
+    assert user.email == 'test_2@example.com'
+    assert meta.get('job_title') == 'QA Tester'

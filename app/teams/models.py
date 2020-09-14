@@ -51,6 +51,9 @@ class Team():
 
         self.facebook_token = token
 
+    def remove(self):
+        pyr_db.child('teams').child(self.id).remove()
+        print(f'Team {self.id} removed')
 
 
 class Membership():

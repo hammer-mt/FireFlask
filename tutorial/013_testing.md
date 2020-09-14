@@ -190,31 +190,255 @@ We won't yet offer this in our UI (the admin can delete users who request it) be
 ```
 def destroy(self):
         auth.delete_user(self.id)
+        print(f"Deleted user {self.id}")
 ```
 
 Rather than messing with the signup routes and finding a way to fake the form field, instead let's just test the User model directly.
 
+We need to do a few things at once to make this possible, first we need to import the string and random modules to make a password for the fake test user, then import the User model.
 
 
-create(name, email, password)
-
-def_test_sign_up(tester):
-
-def sign_up(client, username, password):
-    return client.post('/login', data=dict(
-        username=username,
-        password=password
-    ), follow_redirects=True)
+```
+import string
+import random
+from app.auth.models import User
 
 
-def logout(client):
-    return client.get('/logout', follow_redirects=True)
+def test_sign_up(tester):
+    name = 'tester'
+    email = 'test@example.com'
+    password = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(7))
+    print(name, email, password)
+    user = User.create(name, email, password)
+    assert user.email == email
+    user.destroy()
+```
 
+The other thing we need to do is make environment variables available to pytest, because annoyingly they don't read from our yaml or flaskenv files.
 
+So create a pytest.ini file at the top level of the application (i.e. same place as the flaskenv file) that looks like this:
+
+```
+[pytest]
+env =
+    FIREBASE_API_KEY=abcdefghijklmnopqrstuvwxyz
+```
+
+This will be what pyrebase reads from when making calls with an API key.
+
+Finally we need to do some quick refactoring of our User model - right now it has login_user and logout_user which are session methods and shouldn't be included in our testing of the model right now.
+
+In auth/model.py change the sign up and sign in methods.
+
+```
+@staticmethod
+    def create(name, email, password):
+        firebase_user = auth.create_user(
+            email=email,
+            password=password,
+            display_name=name
+        )
+        print('Sucessfully created new user: {0}'.format(firebase_user.uid))
+
+        # send verification
+        pyr_user = pyr_auth.sign_in_with_email_and_password(email, password)
+        pyr_auth.send_email_verification(pyr_user['idToken'])
+
+        print("Sent email verification")
+
+        flask_user = User(
+            uid=firebase_user.uid,
+            email=firebase_user.email,
+            name=firebase_user.display_name,
+            verified=firebase_user.email_verified,
+            created=firebase_user.user_metadata.creation_timestamp,
+            photo_url=firebase_user.photo_url
+        )
+        return flask_user
+
+    @staticmethod
+    def auth(email, password):
+        pyr_user = pyr_auth.sign_in_with_email_and_password(email, password)
+        pyr_user_info = pyr_auth.get_account_info(pyr_user['idToken'])
+
+        is_verified = pyr_user_info['users'][0]['emailVerified']
+
+        if not is_verified:
+            # send verification
+            pyr_auth.send_email_verification(pyr_user['idToken'])
+            print("Sent email verification")
+
+        firebase_user = auth.get_user(pyr_user['localId'])
+
+        print('Sucessfully signed in user: {0}'.format(pyr_user['localId']))
+        flask_user = User(
+            uid=pyr_user['localId'],
+            email=pyr_user['email'],
+            name=pyr_user['displayName'],
+            verified=is_verified,
+            created=pyr_user_info['users'][0]['createdAt'],
+            photo_url=firebase_user.photo_url
+        )
+        return flask_user
+```
+
+Also go in and delete the sign out method from User.
+
+Then go to auth/routes.py to bring the login into the sign up and sign in methods there.
+
+```
+@bp.route('/sign_in', methods=['GET', 'POST'])
+def sign_in():
+    form = SignInForm()
+    if form.validate_on_submit():
+        email = form.email.data
+        password = form.password.data
+
+        #authenticate the user
+        try:
+            user = User.auth(email, password)
+            login_user(user, remember=True)
+
+            # Sign in successful
+            flash('User {}, logged in with id={}'.format(
+                current_user.email, current_user.id), 'blue')
+            return redirect(url_for('main.index'))
+
+        except Exception as e:
+            # Sign in unsuccessful
+            error_json = e.args[1]
+            error = json.loads(error_json)['error']['message']
+            flash("Error: {}".format(error), 'red')
+            
+            return render_template('auth/sign_in.html', title='Sign In', form=form)
+        
+    return render_template('auth/sign_in.html', title='Sign In', form=form)
+
+@bp.route('/sign_up', methods=['GET', 'POST'])
+def sign_up():
+    form = SignUpForm()
+    if form.validate_on_submit():
+        name = form.name.data
+        email = form.email.data
+        password = form.password.data
+
+        #authenticate a user
+        try:
+            user = User.create(name, email, password)
+            login_user(user, remember=True)
+
+            # Sign up successful
+            flash('User {}, created with id={}'.format(
+                current_user.email, current_user.id), 'teal')
+            return redirect(url_for('main.index'))
+
+        except Exception as e:
+            # Sign up unsuccessful
+
+            if type(e.args[0]) == str:
+                 error = e.args[0] # weird bug where not returning json
+            else:
+                error_json = e.args[1]
+                error = json.loads(error_json)['error']['message']
+            flash("Error: {}".format(error), 'red')
+        
+    return render_template('auth/sign_up.html', title='Sign Up', form=form)
+
+@bp.route('/sign_out', methods=['GET', 'POST'])
+@login_required
+def sign_out():
+    user_id = current_user.id # save before user logged out
+    logout_user()
+    flash("User {} signed out".format(user_id), 'blue')
+    return redirect(url_for("main.index"))
+```
+
+Now if you run pytest, it should work as planned.
+`pytest -vv -s`
+
+You'll see hopefully that the new user was created then destroyed.
+
+Note it takes some time to run this now, so if you want to run the tests without auth, the command would be:
+`pytest -vv -s -k "not _auth"`
+
+Or if you only wanted to run auth tests it would be:
+`pytest -vv -s -k "_auth"`
+
+Now we're going to be creating a user for each new test, so let's put that into a fixture.
+
+Move our imports across to conftest.
+```
+import string
+import random
+from app.auth.models import User
+```
+
+We need to first create a fixture for password (because we'll need to use this password when checking sign in methods later).
+
+```
+@pytest.fixture()
+def password():
+    password = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(7))
+    yield password
+```
+
+Now we make a second fixture which takes this password in to create the user.
+
+```
+@pytest.fixture()
+def user(password):
+    name = 'tester'
+    email = 'test@example.com'
+    user = User.create(name, email, password)
+
+    yield user
+
+    print('')
+    user.destroy()
+```
+
+Our sign up test can now be as simple as
+```
+def test_sign_up(user):
+    assert user.email == 'test@example.com'
+```
+
+Now let's test sign in and see how we go.
+
+First we'll need to remove this code from our sign in method in the User model (it was causing us to hit a rate limit).
+```
+if not is_verified:
+    # send verification
+    pyr_auth.send_email_verification(pyr_user['idToken'])
+    print("Sent email verification")
+```
+
+Then the test should just be:
+```
+def test_sign_in(user, password):
+    user = User.auth('test@example.com', password)
+    assert user.email == 'test@example.com'
+```
+
+Now let's test editing a user's profile and see how that works.
+
+```
+def test_edit_profile(user):
+    user.edit('tester 2', 'test_2@example.com', 'QA Tester')
+
+    user = User.get(user.id)
+    meta = user.get_meta()
+
+    assert user.name == 'tester 2'
+    assert user.email == 'test_2@example.com'
+    assert meta.get('job_title') == 'QA Tester'
+```
+
+Ok so we've managed to cross off the first few things on our list. I know we haven't done logout, but then we're just using the plain flask implementation and as a new coder it probably won't be a good use of time to test components of a popular framework – instead we should focus on the parts we coded as that's where there is likely to be more mistakes! Obviously over time we should build up full test coverage, but on our first introduction to testing we should focus only on testing the most important parts or it'll get tedious.
 
 - ~~Visit the homepage~~
-- ~~Sign up and sign out~~
-- Log in and edit your profile
+- ~~Sign up~~ and sign out
+- ~~Log in and edit your profile~~
 - Create a team
 - Add account id and conversion event to team
 - Connect Facebook ads
@@ -222,4 +446,83 @@ def logout(client):
 - Log in as invited user
 - Visit the generic dashboard
 - Visit the Facebook dashboard
+
+Next up is creating a team. Let's do that as the same time as adding an account id and conversion event, as well as inviting a user to team and loging in as that user. Then we'll finish up by testing the cloud functions for the generic dashboard and Facebook ads.
+
+Let's create another file called `test_team.py`.
+
+Just like on auth, we'll need to create the ability to remove a team and its memberships.
+
+Each membership has it's own method for destroying (we use it when removing a user from a team) called Membership.remove(). Let's create something similar for Team.
+
+```
+def remove(self):
+    pyr_db.child('teams').child(self.id).remove()
+    print(f'Team {self.id} removed')
+```
+
+So first let's do our imports.
+
+`from app.teams.models import Team, Membership`
+
+Then also in conftest, create the fixture.
+
+```
+@pytest.fixture()
+def team():
+    name = 'Team Tester'
+    team = Team.create(name)
+
+    yield team
+    
+    print('')
+    team.remove()
+```
+
+Then the test for team can be simply:
+```
+def test_create_team(team):
+    assert team.name == 'Team Tester'
+```
+
+Now let's test updating the team and editing. Import the Team model (and Membership as we'll use it later)
+`from app.teams.models import Team, Membership`
+
+Then our team update testing is very similar to how we tested update users.
+
+```
+def test_update_team(team):
+    team.update('Team Tester 2', '123456789', 'landing_page_view')
+
+    team = Team.get(team.id)
+
+    assert team.name == 'Team Tester 2'
+    assert team.account_id == '123456789'
+    assert team.conversion_event == 'landing_page_view'
+```
+
+Now let's test we can invite a user and let them log in.
+
+First import user (so we can log in)
+`from app.auth.models import User`
+
+Then we need to create a new membership with our test user, and asset the user id, team id etc is correct. We'll then log the user in and see if that works, before removing the membership.
+
+```
+def test_membership_invite(team, user, password):
+    role = "READ"
+    membership = Membership.create(user.id, team.id, role)
+
+    assert membership.user_id == user.id
+    assert membership.team_id == team.id
+    assert membership.role == role
+
+    user = User.auth('test@example.com', password)
+    assert user.email == 'test@example.com'
+
+    print("")
+    membership.remove()
+```
+
+There are obviously more comprehensive tests we can run on users and members, but for now this is good enough to move on to get test coverage on our cloud functions.
 
